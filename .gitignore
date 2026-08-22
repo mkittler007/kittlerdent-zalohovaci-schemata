@@ -15,5 +15,9 @@ synology_dump/esynoscheduler.db
 *.bak.*
 *.bak_*
 
+# --- zašifrovaný archiv secretů (slabší heslo → NE na GitHub;
+#     žije jen v hubu = záloha na NAS+cloud) ---
+*.enc
+
 # --- macOS ---
 .DS_Store

@@ -12,6 +12,13 @@ Postup obnovy. Předpoklad: nový/opravený NAS (ideálně stejný model **DS418
 | `Retence VM macOS/` | schéma zálohy VM (běží ale z hostu `~/bin`) | tato složka |
 | data | z **HyperBackup C2 cloudu** (Martin má PEMy + přístup přes web) + Btrfs snapshoty pokud disky přežily | C2 |
 
+> **⚠️ Citlivé artefakty jsou zašifrované.** Soubory `.dss`, `synology_dump/HyperBackup/*.conf` (C2 credentials `remote_key`/`remote_secret`/`remote_tenant_id`), `synology_dump/SynologyDrive/*.conf`, `esynoscheduler.db` a `Retence VM macOS/.telegram.env` **nejsou v plaintextu** — jsou v archivu **`SECRETS_zalohovaci_schemata.tar.gz.enc`** (AES-256, heslo ve správci hesel; archiv NENÍ na GitHubu, jen v tomto hubu = záloha na NAS+cloud). Před obnovou rozbal ve složce `Zalohovací schemata/`:
+> ```
+> openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+>   -in SECRETS_zalohovaci_schemata.tar.gz.enc | tar -xzf -
+> ```
+> Vrátí soubory na jejich místa. Po použití plaintext zase smaž a případně přešifruj (`tar -czf - <soubory> | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass stdin -out SECRETS_zalohovaci_schemata.tar.gz.enc`).
+
 ## 1) Fyzická obnova + DSM
 1. Osadit disky (RAID5, 4×). Když disky přežily → DSM je nabídne k **migraci** (data + většina nastavení zůstanou). Když ne → čistá instalace DSM 7.1+ a obnova dat z C2.
 2. Nainstalovat DSM, základní síť: **IP 192.168.100.120/24, brána+DNS 192.168.100.250, hostname `Syno_Backup`**.
