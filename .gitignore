@@ -1,0 +1,19 @@
+# --- secrets (NIKDY na GitHub) ---
+.telegram.env
+*.env
+
+# --- export konfigurace Synology (může obsahovat hesla/certifikáty) ---
+*.dss
+
+# --- Synology config dumpy: C2 cloud credentials (remote_key/remote_secret),
+#     device link keys, binární scheduler dump — NIKDY na GitHub ---
+synology_dump/**/*.conf
+synology_dump/esynoscheduler.db
+
+# --- ruční zálohy skriptů (redundantní s git historií) ---
+*.bak
+*.bak.*
+*.bak_*
+
+# --- macOS ---
+.DS_Store

@@ -1,0 +1,4 @@
+# Config dumpy obsahují C2 cloud credentials (remote_key/remote_secret),
+# device link keys a binární scheduler dump — NIKDY na GitHub.
+*.conf
+*.db
