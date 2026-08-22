@@ -59,3 +59,29 @@ Noční záloha na Synology zřejmě neběžela — zkontroluj."
 else
     wlog "OK — poslední úspěšná záloha před ${AGE_H} h ($LAST)"
 fi
+
+# --- Drift-check: ostrý skript na hostu vs poslední commitnutá verze (git) ---
+# Režim B: host = zdroj pravdy. Hash naposledy synchronizované verze je v
+# ~/bin/.vm-backup-synced.md5 (aktualizuje ho Claude při každém sync→commit→push).
+# iCloud se ZÁMĚRNĚ neporovnává (lag/eviction dělal falešné poplachy).
+# Když se aktuální skript liší od zaznamenaného hashe → změna nebyla commitnutá.
+HASHFILE="$HOME/bin/.vm-backup-synced.md5"
+if [ -f "$HASHFILE" ]; then
+    DRIFT=""
+    for f in vm-backup-synology.sh vm-backup-watchdog.sh vm-backup-run.sh; do
+        live="$HOME/bin/$f"; [ -f "$live" ] || continue
+        rec=$(awk -v n="$f" '$2==n{print $1}' "$HASHFILE")
+        [ -n "$rec" ] || continue
+        [ "$(md5 -q "$live" 2>/dev/null)" != "$rec" ] && DRIFT="$DRIFT $f"
+    done
+    if [ -n "$DRIFT" ]; then
+        wlog "DRIFT: skripty se liší od commitnuté verze:$DRIFT"
+        notify_telegram "🟠 <b>VM backup skript nesynchronizovaný s gitem</b>
+Na hostu se liší od commitnuté verze:$DRIFT
+Změna nebyla pushnutá do repa kittlerdent-zalohovaci-schemata — řekni Claude „sync zálohovací skripty\"."
+    else
+        wlog "Drift-check OK — skripty == commitnutá verze"
+    fi
+else
+    wlog "Drift-check: chybí baseline $HASHFILE — přeskočeno"
+fi
