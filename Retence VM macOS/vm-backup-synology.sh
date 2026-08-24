@@ -190,7 +190,7 @@ copy_to_nas() {
     local attempt rc
     for attempt in $(seq 1 "$MAX_RETRY"); do
         log "rsync pokus $attempt/$MAX_RETRY → $REMOTE_PARTIAL (resume)…"
-        run_as_owner "$RSYNC" -rlt -s $SPARSE_FLAG --partial --inplace --delete --bwlimit=40M \
+        run_as_owner "$RSYNC" -rlt -s $SPARSE_FLAG --partial --inplace --delete \
             --rsync-path="$REMOTE_RSYNC" \
             --human-readable --stats \
             -e "ssh $SSH_OPTS" \
