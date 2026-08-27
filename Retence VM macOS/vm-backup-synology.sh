@@ -38,7 +38,7 @@ SSH_OPTS="-i $SYNO_KEY -o BatchMode=yes -o StrictHostKeyChecking=no -o ServerAli
 MAX_RETRY=5                                              # počet pokusů rsync (mezi pokusy resume)
 RETRY_WAIT=30                                            # s mezi pokusy
 
-KEEP_RECENT=3                 # kolik nejnovějších kopií vždy držet
+KEEP_RECENT=2                 # kolik nejnovějších kopií vždy držet
 LONG_INTERVAL_DAYS=10         # kotevní kopie se obměňuje po tolika dnech
 
 LOG="$HOME/Library/Logs/vm-backup-synology.log"

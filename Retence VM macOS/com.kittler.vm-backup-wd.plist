@@ -3,26 +3,24 @@
 <plist version="1.0">
 <dict>
 	<key>Label</key>
-	<string>com.kittler.vm-backup</string>
+	<string>com.kittler.vm-backup-wd</string>
 	<key>ProgramArguments</key>
 	<array>
 		<string>/bin/bash</string>
-		<string>/Users/martinkittler/bin/vm-backup-synology.sh</string>
+		<string>/Users/martinkittler/bin/vm-backup-wd.sh</string>
 	</array>
 	<key>RunAtLoad</key>
 	<false/>
 	<key>StandardErrorPath</key>
-	<string>/Users/martinkittler/Library/Logs/vm-backup-synology.err.log</string>
+	<string>/Users/martinkittler/Library/Logs/vm-backup-wd.err.log</string>
 	<key>StandardOutPath</key>
-	<string>/Users/martinkittler/Library/Logs/vm-backup-synology.out.log</string>
+	<string>/Users/martinkittler/Library/Logs/vm-backup-wd.out.log</string>
 	<key>StartCalendarInterval</key>
 	<dict>
 		<key>Hour</key>
-		<integer>5</integer>
+		<integer>4</integer>
 		<key>Minute</key>
 		<integer>0</integer>
-		<key>Weekday</key>
-		<integer>6</integer>
 	</dict>
 </dict>
 </plist>
