@@ -8,12 +8,8 @@
     <string>/bin/bash</string>
     <string>/Users/martinkittler/VM_Safety/bin/hlidac_zaloh.sh</string>
   </array>
-  <!-- 2× denně: 07:15 (po nočním ram/WD/Synology + ranním cold) a 19:15 (po večerním cold). -->
-  <key>StartCalendarInterval</key>
-  <array>
-    <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>15</integer></dict>
-    <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>15</integer></dict>
-  </array>
+  <!-- Každou hodinu — aby stíhal logiku „výpadek → za 2 h retry → +1 h teprve notifikace". -->
+  <key>StartInterval</key><integer>3600</integer>
   <key>StandardOutPath</key><string>/Users/martinkittler/VM_Safety/agent.log</string>
   <key>StandardErrorPath</key><string>/Users/martinkittler/VM_Safety/agent.err</string>
 </dict>
