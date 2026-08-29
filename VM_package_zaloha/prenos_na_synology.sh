@@ -1,48 +1,37 @@
 #!/bin/bash
-# Přenos posledního nočního balíku (s RAM) z Thunderboltu na Synology (.120) — off-host.
-# BĚŽÍ NA HOSTU (.24), okno ~04:00. Retence 2 na NAS. Viz PLAN.md.
-#
-# POLITIKA (MK 29.8.2026): off-host na NAS jde POUZE noční RAM balík (macOS_ram_*).
-#   Intraday cold balíky (macOS_cold_*) zůstávají JEN lokálně na Thunderboltu — na NAS se NEposílají
-#   (plný noční přenos je kvůli kontenci SSD hosta pomalý, viz PLAN/paměť). Proto glob níže = jen _ram_.
+# Přenos nejnovějšího nočního (ram) balíku z LOCAL_BASE na Synology (.120) — off-host.
+# BĚŽÍ NA HOSTU (.24), okno ~23:50 (PO WD). OBDEN (parita sudý den), retence 4 na NAS.
+# POLITIKA: off-host jde POUZE noční RAM balík (macOS_ram_*); intraday cold zůstává lokálně.
 set -u
-SRC_BASE="/Volumes/Thunderbolt/VM_packages"          # uprav dle skutečného mountu Thunderboltu
-SYNO_USER="admin"
-SYNO_HOST="192.168.100.120"
-SYNO_KEY="$HOME/.ssh/synology_backup"
-NAS_BASE="/volume1/VM_packages"                      # dedikovaná složka (NE monitoring logy)
-RSYNC="/opt/homebrew/bin/rsync"; [ -x "$RSYNC" ] || RSYNC="rsync"
-SSH_OPTS="-i $SYNO_KEY -o BatchMode=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o ConnectTimeout=15"
-KEEP=2
-LOG="/Users/martinkittler/VM_Safety/prenos_na_synology.log"
-ts() { date +%FT%T%z; }
-log() { echo "$(ts) $*" >> "$LOG"; }
+DIR="$(cd "$(dirname "$0")" && pwd)"; . "$DIR/config.sh"
+LOG="$LOG_DIR/prenos_na_synology.log"; ts(){ date +%FT%T%z; }; log(){ echo "$(ts) $*" >> "$LOG"; }
 
-[ -d "$SRC_BASE" ] || { log "Thunderbolt $SRC_BASE není připojen — přeskočeno."; exit 2; }
+# OBDEN: agent fajruje denně, tady se pustí jen v SUDÝ den (epoch_day % 2 == 0).
+epoch_day=$(( $(date +%s) / 86400 ))
+if [ $(( epoch_day % 2 )) -ne 0 ]; then log "Obden gate: dnes lichý den — nekopíruje se."; exit 0; fi
 
-# nejnovější noční (ram) balík
-PKG=$(ls -1dt "$SRC_BASE/macOS_ram_"*.macvm 2>/dev/null | head -1)
-[ -n "$PKG" ] || { log "Žádný macOS_ram_*.macvm na Thunderboltu — nic k přenosu."; exit 0; }
+PKG=$(ls -1dt "$LOCAL_BASE/macOS_ram_"*.macvm 2>/dev/null | head -1)
+[ -n "$PKG" ] || { log "Žádný macOS_ram_* v $LOCAL_BASE — nic k přenosu."; exit 0; }
 NAME=$(basename "$PKG")
 
-# vzdálený rsync (Entware, když je) + cílová složka
-REMOTE_RSYNC=$(ssh $SSH_OPTS "$SYNO_USER@$SYNO_HOST" 'command -v /opt/bin/rsync >/dev/null && echo /opt/bin/rsync || echo /usr/bin/rsync' 2>/dev/null)
+# vzdálený rsync (Entware 3.4.1 se sparse, jinak DSM bez -S) + cílová složka
+REMOTE_RSYNC=$(ssh $SSH_OPTS "$SYNO_USER@$SYNO_HOST" "command -v /opt/bin/rsync >/dev/null && echo /opt/bin/rsync || echo /usr/bin/rsync" 2>/dev/null)
 REMOTE_RSYNC=${REMOTE_RSYNC:-/usr/bin/rsync}
-ssh $SSH_OPTS "$SYNO_USER@$SYNO_HOST" "mkdir -p '$NAS_BASE'" 2>>"$LOG"
+SPARSE=""; echo "$REMOTE_RSYNC" | grep -q /opt/bin/rsync && SPARSE="-S"
+ssh $SSH_OPTS "$SYNO_USER@$SYNO_HOST" "mkdir -p \"$NAS_BASE\"" 2>>"$LOG"
 
-log "přenos $NAME → $SYNO_HOST:$NAS_BASE/ (rsync $REMOTE_RSYNC)…"
-if "$RSYNC" -a --partial --inplace --timeout=1200 --rsync-path="$REMOTE_RSYNC" \
+log "přenos $NAME → $SYNO_HOST:$NAS_BASE/ (rsync $REMOTE_RSYNC $SPARSE)…"
+if "$RSYNC" -rlt $SPARSE --partial --inplace --timeout=1800 --rsync-path="$REMOTE_RSYNC" \
      -e "ssh $SSH_OPTS" "$PKG/" "$SYNO_USER@$SYNO_HOST:$NAS_BASE/$NAME/" 2>>"$LOG"; then
   log "OK přeneseno: $NAME"
 else
-  log "CHYBA přenosu $NAME (rc=$?) — ponecháno k dalšímu pokusu."
-  exit 1
+  log "CHYBA přenosu $NAME (rc=$?) — ponecháno k dalšímu pokusu."; notify "VM záloha Synology: přenos $NAME selhal"; exit 1
 fi
 
-# retence: nech KEEP nejnovějších macOS_ram_* na NAS, starší smaž
+# retence 4 na NAS (jen macOS_ram_*)
 ssh $SSH_OPTS "$SYNO_USER@$SYNO_HOST" "
-  ls -1dt '$NAS_BASE'/macOS_ram_*.macvm 2>/dev/null | tail -n +\$(( $KEEP + 1 )) | while read -r d; do
+  ls -1dt \"$NAS_BASE\"/macOS_ram_*.macvm 2>/dev/null | tail -n +\$(( $RETAIN_SYNO + 1 )) | while read -r d; do
     rm -rf \"\$d\" && echo \"rotace: smazan \$d\"
   done
 " 2>>"$LOG" | while read -r line; do log "$line"; done
-log "hotovo (retence $KEEP na NAS)."
+log "OK hotovo (retence $RETAIN_SYNO na NAS)."

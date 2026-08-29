@@ -4,6 +4,41 @@
 > Souvisí: [[project_vm_snapshots_parallels]], [[reference_nas_zalohy]], [[project_zaloha_wd_thunderbolt]].
 > VM: „macOS", UUID `{cf7a9c8f-39b4-4691-8c25-40ebae6a0768}`, host Mac Mini M4 Pro (.24, 64 GB).
 
+## ✅ NASAZENO 29.8.2026 v noci (AKTUÁLNÍ SCHÉMA — nahrazuje starší návrh níže)
+
+Schéma finalizované s Martinem a **nasazené na host** (agenty načtené). Skripty v `~/VM_Safety/bin/`
+(source `VM_package_zaloha/`), společná konfigurace `config.sh` (jediné místo pro režim/retenci).
+
+| Vrstva | Co | Kam | Frekvence | Retence | Agent |
+|---|---|---|---|---|---|
+| Intraday | cold (bez RAM) | vnitřní (COW) → Thunderbolt po po | **06:00 + 18:00** (do po 2×; od po 3× +13:00) | **1** (do po; od po 4) | `com.kittler.vmpkg.cold` |
+| Noční | cold+RAM (ram) | vnitřní → Thunderbolt | **23:00** | **1** (stará se smaže před novou) | `com.kittler.vmpkg.ram` |
+| WD | ram | USB „My Book" | **23:10 denně** | **5** | `com.kittler.vmpkg.wd` |
+| Synology | ram | `.120:/volume1/VM macOS M4/VM_packages` | **23:50 obden** (parita v skriptu) | **4 = 6 dní** | `com.kittler.vmpkg.nas` |
+
+Zdroj pro WD i Synology = hotový noční ram balík z `LOCAL_BASE`. Pořadí ve dnech obojího: **WD (23:10) → Synology (23:50)**.
+Off-host jde jen ram balík (cold zůstává lokálně).
+
+**Velikosti (dnes ~300 GB/balík; po konsolidaci cold ~180 / ram ~200 GB):** WD 5×ram ≈ **~1,0 T**;
+Synology 4×ram ≈ **~0,8 T**; Thunderbolt (od po) 4 cold+1 ram ≈ **~0,9 T**. Vnitřní (do po) = COW ≈ ~0 + churn (proto retence 1 + pojistka místa `MIN_FREE_GB=40`).
+
+**Časy:** freeze VM jen 1×/den = ~40s suspend ve 23:00 (cold pause = ~pár s). Kopie na WD ~25–35 min, na Synology ~30–90 min (z Thunderboltu; z interního déle) — vše na pozadí, VM běží.
+
+### ⚠️ BLOKERY (nutná Martinova ruční akce)
+1. **WD zápis přes launchd/SSH = „Operation not permitted" (TCC).** Kopie na WD NEPOBĚŽÍ, dokud se u stroje neudělí
+   **Full Disk Access** runneru (`/bin/bash`) v System Settings → Soukromí a zabezpečení → Plný přístup k disku.
+   Tentýž grant odblokuje i **Thunderbolt v pondělí** (TCC platí na všechny externí svazky). Skript `prenos_na_wd.sh`
+   to detekuje write-testem a gracefully přeskočí + 1× Telegram (žádná data se nedotknou).
+2. **notify.py na hostu NEEXISTUJE** → alerty jdou přes funkční `~/.vm-backup-telegram.env` (přímý Telegram, jen při chybě).
+
+### PONDĚLÍ (po „mám Thunderbolt") — přepnout na plný režim
+1. Zjistit mount Thunderboltu (`df -h`), v `config.sh`: přepnout `LOCAL_BASE` na Thunderbolt, `RETAIN_COLD=4`.
+2. V `com.kittler.vmpkg.cold.plist` přidat zpět `13:00` (→ 3× denně). Redeploy skriptů+plistů na host, reload agentů.
+3. Udělit **Full Disk Access** (odblokuje WD i Thunderbolt zápis).
+4. Ostrý test `zaloha_vm_package.sh cold`; ověřit kopie na WD i Synology.
+5. Aktualizovat OBNOVA.md (víc lokálních verzí) + PLAN + commit + vault.
+6. Zvážit vypnutí starých `com.kittler.vm-backup` / `vm-snapshot` / `vm-backup-wd` (po pár úspěšných bězích nového).
+
 ## STAV k 29.8.2026 (co UŽ je hotové)
 - **První bezpečnostní kopie HOTOVÁ**: `/Users/martinkittler/VM_Safety/macOS_SAFETY_2026-08-29.macvm`
   (pause→`cp -cR`→resume; 0 s, COW klon, zabral ~0 místa). Nezávislý balík, restorovatelný.

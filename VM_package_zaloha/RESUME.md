@@ -20,10 +20,15 @@
 - **První bezpečnostní kopie VM**: `/Users/martinkittler/VM_Safety/macOS_SAFETY_2026-08-29.macvm` (COW klon). Scénář A obnovy (viz OBNOVA.md) platí.
 - **Parallels Tools auto-update VYPNUTÝ** (`prlctl set --tools-autoupdate off`). Tento restart je poslední „doháněcí".
 
-## POSTAVENO, NEAKTIVOVÁNO (čeká na Thunderbolt = pondělí)
-- `VM_package_zaloha/`: `zaloha_vm_package.sh cold|ram`, `konsolidace_snapshotu.sh`, `prenos_na_synology.sh`, `launchd/` (cold 06/13/21, ram 02:00, nas 04:00). Vše `bash -n` OK.
-- **Rozhodnutí:** nové schéma NAHRAZUJE stará `vm-backup-synology.sh` + `com.kittler.vm-snapshot` (vypnout OBA po 1. úspěšném běhu).
-- **Off-host politika:** na NAS jen noční RAM balík; intraday cold jen lokálně na Thunderboltu.
+## ✅ NASAZENO 29.8.2026 v noci (viz PLAN.md „NASAZENO" — autoritativní)
+- Skripty na hostu `~/VM_Safety/bin/` (`config.sh` + `zaloha_vm_package.sh` + `prenos_na_wd.sh` + `prenos_na_synology.sh` + `konsolidace_snapshotu.sh`).
+- **4 agenty načtené:** `com.kittler.vmpkg.cold` (06/18), `.ram` (23:00), `.wd` (23:10 denně), `.nas` (23:50 obden).
+- **Interní ochrana + off-host hned:** ruční COW klon `~/VM_Safety/packages/macOS_cold_2026-08-29_2248.macvm` + jeho přenos na Synology `/volume1/VM macOS M4/VM_packages`.
+- **Režim „do pondělí":** LOCAL_BASE = interní (COW), cold 2×/den retence 1, ram retence 1. Přepnutí na Thunderbolt = `config.sh` (LOCAL_BASE + RETAIN_COLD=4) + cold plist +13:00.
+- **BLOKER WD:** zápis na „My Book" přes launchd = TCC „Operation not permitted" → čeká na ruční **Full Disk Access** (odblokuje i Thunderbolt). Skript gracefully skipuje + Telegram.
+- **notify.py na hostu není** → alerty přes `~/.vm-backup-telegram.env` (přímý Telegram, jen chyba).
+- **Staré agenty ponechány** (`vm-backup`, `vm-snapshot`, `vm-backup-wd`) jako pojistka — vypnout až po pár úspěšných bězích nového (pondělí).
+- **Off-host politika:** na NAS jen noční RAM balík; intraday cold jen lokálně.
 
 ## NEDOKONČENO — udělat po restartu
 1. **Git commit+push** nových složek (`vytizenost_CPU_RAM`, `notify_pojistka`, `VM_package_zaloha`) do repa

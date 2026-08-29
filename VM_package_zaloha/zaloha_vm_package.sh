@@ -1,88 +1,78 @@
 #!/bin/bash
 # Výroba samostatného obnovitelného balíku VM (kopie celého bundlu macOS.macvm).
-# BĚŽÍ NA HOSTU (.24). Viz PLAN.md.
+# BĚŽÍ NA HOSTU (.24). Viz PLAN.md. Použití: zaloha_vm_package.sh cold|ram
 #
 # Postup (minimální downtime):
-#   1) pause (cold) NEBO suspend (ram)  -> konzistentní stav, disk klidný
-#   2) cp -cR na INTERNÍ disk = instantní COW klon (staging)   -> downtime jen tohle
-#   3) resume  -> VM zase jede
-#   4) přesun staging klonu na Thunderbolt (plná kopie, už za běhu VM)
-#   5) rotace (retence) na Thunderbolt, úklid staging
-#
-# Použití:  zaloha_vm_package.sh cold|ram
+#   1) pause (cold) / suspend (ram)  -> konzistentní stav
+#   2) klon:
+#        - LOCAL_BASE na STEJNÉM svazku jako SRC (interní) -> cp -cR = instantní COW klon PŘÍMO tam
+#        - LOCAL_BASE na jiném svazku (Thunderbolt)        -> cp -cR staging interně (instant) -> resume -> cp -R na Thunderbolt
+#   3) resume co nejdřív  4) rotace (retence)
 set -u
-TYPE="${1:-cold}"                       # cold = studený (bez RAM) | ram = s RAM stavem (true resume)
-UUID="{cf7a9c8f-39b4-4691-8c25-40ebae6a0768}"
-PRL="/Applications/Parallels Desktop.app/Contents/MacOS/prlctl"
-SRC="/Users/martinkittler/Parallels/macOS.macvm"
-STAGE_DIR="/Users/martinkittler/VM_Safety/staging"          # interní, COW klon (dočasně)
-DEST_BASE="/Volumes/Thunderbolt/VM_packages"                # Thunderbolt (od pondělí); uprav dle skutečného mountu
-PHASE="/Users/martinkittler/monitoring/cpuram/phase"        # korelace zátěže s monitoringem
-LOG="/Users/martinkittler/VM_Safety/zaloha_vm_package.log"
-# retence dle typu (počet balíků na Thunderbolt)
-RETAIN_COLD=6
-RETAIN_RAM=3
-
-ts() { date +%FT%T%z; }
-log() { echo "$(ts) [$TYPE] $*" >> "$LOG"; }
+DIR="$(cd "$(dirname "$0")" && pwd)"; . "$DIR/config.sh"
+TYPE="${1:-cold}"
 stamp=$(date +%Y-%m-%d_%H%M)
 NAME="macOS_${TYPE}_${stamp}.macvm"
-STAGE="$STAGE_DIR/$NAME"
-DEST="$DEST_BASE/$NAME"
+LOG="$LOG_DIR/zaloha_vm_package.log"
+PHASE="/Users/martinkittler/monitoring/cpuram/phase"
+ts() { date +%FT%T%z; }
+log() { echo "$(ts) [$TYPE] $*" >> "$LOG"; }
+mkdir -p "$LOCAL_BASE" "$LOG_DIR" 2>/dev/null
 
-mkdir -p "$STAGE_DIR" "$(dirname "$LOG")"
-[ -x "$PRL" ] || { log "CHYBA: prlctl nenalezen"; exit 1; }
-[ -d "$SRC" ] || { log "CHYBA: zdrojový bundle chybí: $SRC"; exit 1; }
+[ -x "$PRL" ] || { log "CHYBA: prlctl chybí"; notify "VM záloha: prlctl chybí"; exit 1; }
+[ -d "$SRC" ] || { log "CHYBA: zdroj chybí $SRC"; notify "VM záloha: zdroj chybí"; exit 1; }
+[ -d "$LOCAL_BASE" ] || { log "CHYBA: LOCAL_BASE nedostupný $LOCAL_BASE (Thunderbolt nepřipojen?)"; notify "VM záloha: cíl $LOCAL_BASE nedostupný (Thunderbolt?)"; exit 2; }
 
-# cíl musí být připojený (Thunderbolt). Když ne, radši nic nedělej než plnit interní disk.
-if [ ! -d "$DEST_BASE" ]; then
-  log "CÍL $DEST_BASE není připojen (Thunderbolt?) — přeskočeno, aby se nezaplnil interní disk."
-  exit 2
+# stejný svazek jako zdroj? (device id) → přímý COW klon, jinak staging+move
+SAME=0
+[ "$(stat -f %d "$SRC" 2>/dev/null)" = "$(stat -f %d "$LOCAL_BASE" 2>/dev/null)" ] && SAME=1
+
+# pojistka volného místa (jen interní/stejný svazek)
+if [ "$SAME" = 1 ]; then
+  free_gb=$(df -g "$LOCAL_BASE" 2>/dev/null | awk 'NR==2{print $4}')
+  if [ -n "${free_gb:-}" ] && [ "$free_gb" -lt "$MIN_FREE_GB" ]; then
+    old=$(ls -1dt "$LOCAL_BASE/macOS_cold_"*.macvm 2>/dev/null | tail -1)
+    [ -n "$old" ] && rm -rf "$old" && log "pojistka místa: smazán nejstarší $old (volno ${free_gb}G < ${MIN_FREE_GB}G)"
+  fi
 fi
 
 echo backup > "$PHASE" 2>/dev/null
 
-# ── 1)+2) konzistentní stav → COW klon interně ─────────────────────────────────
+# ── 1) konzistentní stav ──────────────────────────────────────────────────────
 if [ "$TYPE" = "ram" ]; then
-  log "suspend (s RAM, ~52 GB, delší downtime)…"
-  "$PRL" suspend "$UUID"  >>"$LOG" 2>&1 || { log "CHYBA suspend"; echo run > "$PHASE"; exit 1; }
+  "$PRL" suspend "$UUID" >>"$LOG" 2>&1 || { log "CHYBA suspend"; echo run > "$PHASE" 2>/dev/null; notify "VM záloha: suspend selhal"; exit 1; }
 else
-  log "pause (studený, disk-konzistentní)…"
-  "$PRL" pause "$UUID"    >>"$LOG" 2>&1 || { log "CHYBA pause"; echo run > "$PHASE"; exit 1; }
+  "$PRL" pause "$UUID" >>"$LOG" 2>&1 || { log "CHYBA pause"; echo run > "$PHASE" 2>/dev/null; notify "VM záloha: pause selhal"; exit 1; }
 fi
 
+# ── 2) klon ───────────────────────────────────────────────────────────────────
 t0=$(date +%s)
-cp -cR "$SRC" "$STAGE"; cprc=$?
-t1=$(date +%s)
-log "COW klon interně rc=$cprc, ${STAGE}, ${t1}s-${t0}s = $((t1-t0)) s downtime-část"
-
-# ── 3) resume co nejdřív ───────────────────────────────────────────────────────
-"$PRL" resume "$UUID" >>"$LOG" 2>&1 || log "POZOR: resume vrátil chybu (ověř VM!)"
-echo run > "$PHASE" 2>/dev/null
-
-if [ "$cprc" -ne 0 ]; then
-  log "CHYBA: interní klon selhal — balík NEvznikl. Staging uklizen."
-  rm -rf "$STAGE" 2>/dev/null
-  exit 1
-fi
-
-# ── 4) přesun staging → Thunderbolt (už za běhu VM) ───────────────────────────
-log "přesun na Thunderbolt: $DEST"
-if cp -R "$STAGE" "$DEST" 2>>"$LOG"; then
-  rm -rf "$STAGE" 2>/dev/null
-  log "OK balík na Thunderboltu: $DEST"
+if [ "$SAME" = 1 ]; then
+  DEST="$LOCAL_BASE/$NAME"; cp -cR "$SRC" "$DEST"; rc=$?
 else
-  log "CHYBA přenosu na Thunderbolt — staging PONECHÁN v $STAGE k ručnímu přesunu."
-  exit 1
+  STAGE="$LOG_DIR/staging/$NAME"; mkdir -p "$(dirname "$STAGE")"
+  cp -cR "$SRC" "$STAGE"; rc=$?
+fi
+t1=$(date +%s)
+
+# ── 3) resume co nejdřív ──────────────────────────────────────────────────────
+"$PRL" resume "$UUID" >>"$LOG" 2>&1 || { log "POZOR: resume vrátil chybu"; notify "VM záloha: resume vrátil chybu — ověř VM!"; }
+echo run > "$PHASE" 2>/dev/null
+log "klon rc=$rc downtime=$((t1-t0))s same_vol=$SAME"
+
+[ "$rc" -eq 0 ] || { log "CHYBA klonu — balík NEvznikl"; notify "VM záloha: klon selhal ($NAME)"; [ "$SAME" = 0 ] && rm -rf "$STAGE" 2>/dev/null; exit 1; }
+
+# ── 4) staging → Thunderbolt (plná kopie za běhu VM) ─────────────────────────
+if [ "$SAME" = 0 ]; then
+  DEST="$LOCAL_BASE/$NAME"
+  if cp -R "$STAGE" "$DEST" 2>>"$LOG"; then rm -rf "$STAGE" 2>/dev/null; log "OK balík: $DEST"
+  else log "CHYBA přenosu na $LOCAL_BASE — staging ponechán"; notify "VM záloha: přenos na Thunderbolt selhal"; exit 1; fi
 fi
 
-# ── 5) rotace (retence) ── (bash 3.2 na macOS: bez mapfile) ────────────────────
+# ── 5) rotace (retence) ───────────────────────────────────────────────────────
 if [ "$TYPE" = "ram" ]; then keep=$RETAIN_RAM; else keep=$RETAIN_COLD; fi
 i=0
-ls -1dt "$DEST_BASE/macOS_${TYPE}_"*.macvm 2>/dev/null | while IFS= read -r p; do
-  i=$((i+1))
-  if [ "$i" -gt "$keep" ]; then
-    rm -rf "$p" 2>/dev/null && log "rotace: smazán starý balík $p"
-  fi
+ls -1dt "$LOCAL_BASE/macOS_${TYPE}_"*.macvm 2>/dev/null | while IFS= read -r p; do
+  i=$((i+1)); [ "$i" -gt "$keep" ] && rm -rf "$p" 2>/dev/null && log "rotace: smazán starý $p"
 done
-log "hotovo (retence $keep)."
+log "OK hotovo (retence $keep)."

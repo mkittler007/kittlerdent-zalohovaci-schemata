@@ -2,15 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key><string>com.kittler.vmpkg.nas</string>
+  <key>Label</key><string>com.kittler.vmpkg.wd</string>
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>/Users/martinkittler/VM_Safety/bin/prenos_na_synology.sh</string>
+    <string>/Users/martinkittler/VM_Safety/bin/prenos_na_wd.sh</string>
   </array>
-  <!-- Denně 23:50 (PO WD 23:10); skript má obden-paritu uvnitř (jen sudý den). -->
+  <!-- Denně 23:10 (PO nočním ram 23:00, PŘED Synology 23:50). Retence 5 na WD.
+       POZOR: zápis na WD chce Full Disk Access (TCC) — bez něj skript gracefully přeskočí. -->
   <key>StartCalendarInterval</key>
-  <dict><key>Hour</key><integer>23</integer><key>Minute</key><integer>50</integer></dict>
+  <dict><key>Hour</key><integer>23</integer><key>Minute</key><integer>10</integer></dict>
   <key>StandardOutPath</key><string>/Users/martinkittler/VM_Safety/agent.log</string>
   <key>StandardErrorPath</key><string>/Users/martinkittler/VM_Safety/agent.err</string>
 </dict>

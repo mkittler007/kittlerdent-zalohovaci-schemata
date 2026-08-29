@@ -6,12 +6,13 @@
 > **Důležité:** Když je VM dole, pracuje se **přímo na hostu Mac Mini** (jeho obrazovka/klávesnice
 > nebo Obrazovka na dálku), NE uvnitř VM. Vše dole se dělá na hostu.
 
-## Co je čím (kde leží zálohy)
+## Co je čím (kde leží zálohy) — stav od 29.8.2026 (do Thunderboltu = pondělí)
 | Kde | Cesta | Chrání proti | Kdy vzniká |
 |---|---|---|---|
-| Interní disk hosta | `/Users/martinkittler/VM_Safety/macOS_SAFETY_*.macvm` | pád/špatný stav VM, omylem smazané | ruční pojistka (první: 29.8.2026) |
-| Thunderbolt 4 TB | `/Volumes/Thunderbolt/VM_packages/macOS_cold_*.macvm` a `…_ram_*.macvm` | i pád interního disku | 3× denně (cold) + 1× noc (ram) — od pondělí |
-| Synology (.120) | `/volume1/VM_packages` (**JEN noční `macOS_ram_*`**) | pád celého hosta | 1× noc přenos |
+| Interní disk hosta | `/Users/martinkittler/VM_Safety/packages/macOS_cold_*.macvm` a `…_ram_*.macvm` | pád/špatný stav VM, omylem smazané (COW, NE pád disku) | cold 06/18, ram 23:00 |
+| USB „My Book" (WD) | `/Volumes/My Book/VM_packages/macOS_ram_*.macvm` | i pád interního disku | 23:10 denně (retence 5) — **až po udělení Full Disk Access** |
+| Synology (.120) | `/volume1/VM macOS M4/VM_packages/` (**JEN noční `macOS_ram_*`**) | pád celého hosta | 23:50 obden (retence 4) |
+| Thunderbolt 4 TB (od pondělí) | `/Volumes/Thunderbolt/VM_packages/` (cold + ram) | i pád interního disku | přebere roli interního (COW → plné kopie) |
 
 Balík = složka `…​.macvm` = **jeden celek** (v Finderu jedna položka). Název nese **datum a čas** —
 vybírej **nejnovější PŘED tím, než nastal problém**. `cold` = studený start; `ram` = pokračuje přesně kde bylo.
@@ -68,7 +69,10 @@ datem/časem, který je **před** okamžikem poruchy. Když si nejsi jistý stav
 - Host Mac Mini: `192.168.100.24` · Synology NAS: `192.168.100.120` (`smb://…`, `/volume1/VM_packages`)
 - Full plán a mechanismus: `PLAN.md` ve stejné složce.
 
-## STAV k 29.8.2026
-Zatím existuje **jen interní pojistka** `VM_SAFETY_2026-08-29.macvm` (Scénář A funguje).
-Thunderbolt (Scénář B) + Synology přenos (Scénář C) se aktivují **v pondělí** s Thunderbolt diskem —
-do té doby platí jen Scénář A.
+## STAV k 29.8.2026 (v noci — schéma NASAZENO)
+- **Interní balíky** `~/VM_Safety/packages/macOS_cold_*` a `macOS_ram_*` běží (agenty načtené) → Scénář A funguje.
+- **Synology off-host** běží (23:50 obden) → Scénář C funguje (cesta `/volume1/VM macOS M4/VM_packages`).
+  První ruční off-host kopie `macOS_cold_2026-08-29_2248` přenesena hned 29.8. v noci.
+- **WD (Scénář B lokálně)** je připraven, ale **čeká na Full Disk Access** (TCC) — do udělení kopie na WD nepoběží.
+- **Thunderbolt (Scénář B)** = pondělí; do té doby lokální ochrana = interní COW (nechrání proti pádu interního disku,
+  proto je klíčová Synology off-host kopie).
