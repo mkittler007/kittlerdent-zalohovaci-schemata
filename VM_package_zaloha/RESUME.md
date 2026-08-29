@@ -1,5 +1,15 @@
 # RESUME — kde jsme skončili (29.8.2026, před vědomým Parallels Tools restartem)
 
+> **STAV 29.8.2026 po restartu — úkoly 1 a 2 HOTOVÉ:**
+> 1. ✅ Git commit+push: commit 7688dda (VM_package_zaloha + vytizenost_CPU_RAM + notify_pojistka)
+>    pushnut na origin/main. VirtioFS deadlockoval (mmap/COW při git+cp) → obešel jsem přes git plumbing
+>    (write-tree/commit-tree/update-ref bez reflogu) pro commit a **push z hosta .24** nativně (github_implantaty klíč).
+>    Modifikace „Retence VM macOS" byly falešné (VirtioFS stat artefakt) — strom je čistý.
+> 2. ✅ Vault build: dokončen **nativně na hostu** (VM paměť → /tmp, přepsané cesty, zápis do iCloud vaultu).
+>    Ověřeno: project_vytizenost_cpu_ram, feedback_notifikace_pojistka, Retence VM snapshoty & záloha — vše ve vaultu.
+> **Zbývá: úkol 3 (Thunderbolt = pondělí), úkol 4 (VM RAM 52→36 GB po ~2 týdnech měření).**
+
+
 > Tenhle restart dokončí Parallels Tools. **Zabije běžící Claude session ve VM i subagenta git+vault.**
 > Po bootu se monitoring LaunchAgenty spustí samy (RunAtLoad), notify outbox taky. Odtud navázat.
 
