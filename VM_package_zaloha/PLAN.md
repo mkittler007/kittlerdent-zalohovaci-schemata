@@ -24,12 +24,15 @@ Synology 4×ram ≈ **~0,8 T**; Thunderbolt (od po) 4 cold+1 ram ≈ **~0,9 T**.
 
 **Časy:** freeze VM jen 1×/den = ~40s suspend ve 23:00 (cold pause = ~pár s). Kopie na WD ~25–35 min, na Synology ~30–90 min (z Thunderboltu; z interního déle) — vše na pozadí, VM běží.
 
-### ⚠️ BLOKERY (nutná Martinova ruční akce)
-1. **WD zápis přes launchd/SSH = „Operation not permitted" (TCC).** Kopie na WD NEPOBĚŽÍ, dokud se u stroje neudělí
-   **Full Disk Access** runneru (`/bin/bash`) v System Settings → Soukromí a zabezpečení → Plný přístup k disku.
-   Tentýž grant odblokuje i **Thunderbolt v pondělí** (TCC platí na všechny externí svazky). Skript `prenos_na_wd.sh`
-   to detekuje write-testem a gracefully přeskočí + 1× Telegram (žádná data se nedotknou).
-2. **notify.py na hostu NEEXISTUJE** → alerty jdou přes funkční `~/.vm-backup-telegram.env` (přímý Telegram, jen při chybě).
+### ✅ WD vyřešeno (29.8. v noci) — pozor na Time Machine disk
+- **Kořen problému:** „My Book" je **disk Time Machine** → macOS zakazuje zápis VŠEM kromě backupd
+  (i s Full Disk Access, i po odemčení heslem = „Operation not permitted"). NENÍ to FDA ani read-only.
+- **Full Disk Access na `/bin/bash` JE udělen** (Martin 29.8., ověřeno modrým přepínačem) — nutný, ale sám nestačil.
+- **Řešení:** samostatná non-TM APFS volume **`VM_WD`** ve stejném kontejneru disku WD (`diskutil apfs addVolume disk7 APFS VM_WD`).
+  Sdílí místo s TM (~3,3 T volných), NENÍ TM cíl → zápis přes launchd-bash (FDA) funguje. WD tier ukazuje na `/Volumes/VM_WD/VM_packages`.
+  **POZOR:** `diskutil addVolume` i zápis na externí volume jde jen přes **launchd-bash (má FDA)**, NE přes SSH (sandbox -69464 / EPERM).
+- **notify.py na hostu NEEXISTUJE** → alerty přes funkční `~/.vm-backup-telegram.env` (přímý Telegram, jen při chybě).
+- **Thunderbolt v pondělí:** dedikovaný disk (NENÍ TM) → zápis půjde přímo (bash má FDA), bez extra volume.
 
 ### PONDĚLÍ (po „mám Thunderbolt") — přepnout na plný režim
 1. Zjistit mount Thunderboltu (`df -h`), v `config.sh`: přepnout `LOCAL_BASE` na Thunderbolt, `RETAIN_COLD=4`.

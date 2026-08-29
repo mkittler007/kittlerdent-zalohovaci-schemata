@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.kittler.vmpkg.hlidac</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>/Users/martinkittler/VM_Safety/bin/hlidac_zaloh.sh</string>
+  </array>
+  <!-- 2× denně: 07:15 (po nočním ram/WD/Synology + ranním cold) a 19:15 (po večerním cold). -->
+  <key>StartCalendarInterval</key>
+  <array>
+    <dict><key>Hour</key><integer>7</integer><key>Minute</key><integer>15</integer></dict>
+    <dict><key>Hour</key><integer>19</integer><key>Minute</key><integer>15</integer></dict>
+  </array>
+  <key>StandardOutPath</key><string>/Users/martinkittler/VM_Safety/agent.log</string>
+  <key>StandardErrorPath</key><string>/Users/martinkittler/VM_Safety/agent.err</string>
+</dict>
+</plist>

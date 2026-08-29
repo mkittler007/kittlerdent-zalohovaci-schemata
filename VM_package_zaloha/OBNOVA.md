@@ -10,7 +10,7 @@
 | Kde | Cesta | Chrání proti | Kdy vzniká |
 |---|---|---|---|
 | Interní disk hosta | `/Users/martinkittler/VM_Safety/packages/macOS_cold_*.macvm` a `…_ram_*.macvm` | pád/špatný stav VM, omylem smazané (COW, NE pád disku) | cold 06/18, ram 23:00 |
-| USB „My Book" (WD) | `/Volumes/My Book/VM_packages/macOS_ram_*.macvm` | i pád interního disku | 23:10 denně (retence 5) — **až po udělení Full Disk Access** |
+| USB WD volume „VM_WD" | `/Volumes/VM_WD/VM_packages/macOS_ram_*.macvm` | i pád interního disku | 23:10 denně (retence 5) |
 | Synology (.120) | `/volume1/VM macOS M4/VM_packages/` (**JEN noční `macOS_ram_*`**) | pád celého hosta | 23:50 obden (retence 4) |
 | Thunderbolt 4 TB (od pondělí) | `/Volumes/Thunderbolt/VM_packages/` (cold + ram) | i pád interního disku | přebere roli interního (COW → plné kopie) |
 

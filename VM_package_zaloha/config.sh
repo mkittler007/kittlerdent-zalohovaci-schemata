@@ -19,8 +19,11 @@ RETAIN_RAM=1
 # ── Pojistka volného místa na interním disku (platí jen když LOCAL_BASE = interní) ─
 MIN_FREE_GB=40     # když volno < tohle, ořízne nejstarší cold balík dřív, než udělá nový
 
-# ── WD (USB "My Book") — denně, retence 5. POZOR: TCC → runner potřebuje Full Disk Access ─
-WD_BASE="/Volumes/My Book/VM_packages"
+# ── WD (USB) — denně, retence 5. Runner (bash) má Full Disk Access.
+# POZOR: „My Book" je disk Time Machine → macOS tam ZAKAZUJE zápis (i s FDA). Proto se použije
+# SAMOSTATNÁ APFS volume „VM_WD" ve stejném kontejneru (NENÍ TM, sdílí místo s TM, zápis OK).
+# Vytvořeno 29.8.: diskutil apfs addVolume disk7 APFS VM_WD (spouštět přes launchd-bash s FDA). ─
+WD_BASE="/Volumes/VM_WD/VM_packages"
 RETAIN_WD=5
 
 # ── Synology (.120) — OBDEN, retence 4. Cíl v existujícím zapisovatelném share. ─
