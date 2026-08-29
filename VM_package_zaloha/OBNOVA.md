@@ -42,6 +42,11 @@ Nejčastější případ. Máš pojistku, klid.
 ## SCÉNÁŘ B — spadl interní disk hosta (host jede, ale VM bundle je pryč)
 Interní pojistka je taky pryč (byla na tom disku). Sáhni pro **Thunderbolt** nebo **Synology**.
 
+> **WD na čistém/jiném Macu:** volume **`VM_WD`** je normální **nešifrovaná** APFS (žádné heslo, owners vypnuté).
+> Po připojení se sama namountuje (na disku jsou 2 volume: „My Book" = Time Machine, **„VM_WD" = balíky** → ber VM_WD).
+> Finder při prvním přístupu k vyměnitelnému disku jednou zeptá „Povolit přístup" → **Povolit** → čteš a kopíruješ normálně.
+> (Blokace zápisu, kterou řešil setup, platila jen pro automat/launchd, ne pro člověka ve Finderu.)
+
 1. Připoj **Thunderbolt 4 TB** k Mac Mini.
 2. Zkopíruj nejnovější balík z `/Volumes/Thunderbolt/VM_packages/…​.macvm` do `/Users/martinkittler/Parallels/`.
 3. Dál jako Scénář A od kroku 4 (register → start).
