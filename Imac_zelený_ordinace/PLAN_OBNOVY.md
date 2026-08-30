@@ -46,14 +46,16 @@ Pokud iMac ve 12:00 spí, launchd úlohu dožene po probuzení.
 **1** (zrcadlo). Vždy existuje právě **jedna** záloha = poslední polední stav.
 Novým během se přepíše. Historie starších verzí se nedrží (dle zadání).
 
-## 5. ⚠️ Omezení — proti čemu to chrání a proti čemu ne
+## 5. Dvě vrstvy ochrany
 
-Záloha je na **stejném fyzickém SSD** jako originál. **Chrání** proti:
-- poškození/rozbití VM (špatný update Windows, virus, chybná konfigurace),
-- omylem smazané / rozbité VM.
+| Vrstva | Kde | Kdy | Retence | Chrání proti |
+|---|---|---|---|---|
+| **1) Lokální cold** | interní SSD iMacu `~/Parallels_Backup_ordinace/backup/` | denně 12:00 | 1 | rozbití/smazání VM |
+| **2) NAS .120** | `/volume1/HDD IMac ordinace/Parallels_VM_zaloha/` | 1× měsíčně (1. neděle 13:00) | 2 (`vm_current`+`vm_prev`) | + selhání disku / krádež / požár |
 
-**NECHRÁNÍ** proti **selhání disku / krádeži / požáru** (originál i záloha padnou spolu).
-Pro plnou ochranu doplnit občasnou kopii na **externí disk nebo NAS** (viz [[reference_nas_zalohy]]).
+Obě vrstvy nesou i **stav RAM** (`.mem`), takže obnova = **probuzení běžícího systému**, ne studený start.
+
+⚠️ Lokální vrstva sama je na **stejném SSD** jako originál (rychlost) → proti selhání disku ji kryje až **NAS vrstva**. Viz [[reference_nas_zalohy]], [[project_imac_zeleny_zaloha]].
 
 ## 6. POSTUP OBNOVY
 
@@ -87,6 +89,18 @@ Alternativa: v kroku 3 nechat zálohu na místě a spustit ji rovnou z `~/Parall
 ```bash
 ssh -i ~/.ssh/id_ed25519_macmini martinkittler@192.168.100.170
 # dál dle bodu B
+```
+
+### D) Obnova z NAS (když padl SSD iMacu)
+Na NASu `.120` je poslední + předposlední verze:
+`/volume1/HDD IMac ordinace/Parallels_VM_zaloha/vm_current` (nejnovější) a `…/vm_prev`.
+```bash
+# z libovolného Macu s klíčem k NASu, na cílový (opravený) iMac:
+rsync -a -e ssh \
+  admin@192.168.100.120:"/volume1/HDD IMac ordinace/Parallels_VM_zaloha/vm_current/Windows 11_Imac_zelený 2.pvm/" \
+  ~/Parallels/"Windows 11_Imac_zelený 2.pvm/"
+prlctl register ~/Parallels/"Windows 11_Imac_zelený 2.pvm"
+prlctl start "Windows 11 (1)"
 ```
 
 ## 7. Provoz a údržba
