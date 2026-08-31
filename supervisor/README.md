@@ -26,6 +26,9 @@ Telegram token z `~/.vm-backup-telegram.env` (oba na hostu, mimo repo).
   grace, hlídač to **tiše smaže** (nepošle ani „dole", ani „✅ běží").
 - **`PANIC_REPEAT_MIN = 30`** — dokud stav trvá, opakuje á 30 min; po obnově pošle ✅.
 
-## Protějšek ve VM (neverzováno zde)
-VM posílá tep skriptem `~/bin/kd_heartbeat.py` (LaunchAgent `com.kittler.vm_heartbeat`, á 5 min)
-přes SSH na host do `~/.kd_supervisor/vm_heartbeat.json`.
+## Protějšek ve VM — `vm/`
+VM posílá tep skriptem `kd_heartbeat.py` (LaunchAgent `com.kittler.vm_heartbeat`, á 5 min + RunAtLoad)
+přes SSH na host do `~/.kd_supervisor/vm_heartbeat.json`. Kontroluje kritické KeepAlive služby VM
+(telegram, mysql, nginx, postgresql, implantáty Django, web_vp, fitness/ceny web) + porty, spadlé
+`launchctl kickstart`. **Ostrá verze na VM `.82`:** `~/bin/kd_heartbeat.py` +
+`~/Library/LaunchAgents/com.kittler.vm_heartbeat.plist` (VM = zdroj pravdy).
