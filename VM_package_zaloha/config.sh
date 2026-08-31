@@ -36,8 +36,14 @@ TG_ENV="$HOME/.vm-backup-telegram.env"
 RSYNC="/opt/homebrew/bin/rsync"; [ -x "$RSYNC" ] || RSYNC="rsync"
 SSH_OPTS="-i $SYNO_KEY -o BatchMode=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o ConnectTimeout=15"
 
-# Telegram alert JEN při chybě (tvůj funkční env; notify.py na hostu není).
+# Alert JEN při chybě. POJISTKA: primárně notify.py (cross-kanál Telegram→e-mail→iMessage
+# + trvalá outbox fronta, retry navždy; nasazen na hostu 31.8.2026, viz ../notify_pojistka/).
+# Fallback = přímý Telegram, když notify.py chybí (zachová funkčnost i bez pojistky).
 notify() {
+  if [ -x "$HOME/bin/notify.py" ]; then
+    /usr/bin/python3 "$HOME/bin/notify.py" --to martin \
+      --subject "VM záloha" --body "$1" --key vm_backup >/dev/null 2>&1 && return 0
+  fi
   [ -f "$TG_ENV" ] || return 0
   . "$TG_ENV" 2>/dev/null
   curl -s "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
