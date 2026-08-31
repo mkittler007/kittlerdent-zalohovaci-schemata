@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.kittler.supervisor</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/python3.13</string>
+    <string>/Users/martinkittler/kd_supervisor.py</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>600</integer>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/martinkittler/.kd_supervisor/supervisor.out</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/martinkittler/.kd_supervisor/supervisor.err</string>
+</dict>
+</plist>
