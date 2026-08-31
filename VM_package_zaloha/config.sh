@@ -2,18 +2,18 @@
 # Přepínač režimu interní↔Thunderbolt = JEDINÁ proměnná LOCAL_BASE + retence níže.
 UUID="{cf7a9c8f-39b4-4691-8c25-40ebae6a0768}"      # VM "macOS"
 PRL="/Applications/Parallels Desktop.app/Contents/MacOS/prlctl"
-SRC="/Users/martinkittler/Parallels/macOS.macvm"
+SRC="/Volumes/KD_Ext4T/macOS.macvm"
 
 # ── REŽIM ÚLOŽIŠTĚ LOKÁLNÍCH BALÍKŮ ─────────────────────────────────────────
 # DO PONDĚLÍ: interní disk (COW klon = instantní, ~0 místa; NEchrání proti pádu disku).
 # OD PONDĚLÍ (Thunderbolt): zakomentuj interní řádek, odkomentuj Thunderbolt + zvedni RETAIN_COLD na 4.
-LOCAL_BASE="/Users/martinkittler/VM_Safety/packages"    # interní (do pondělí)
-#LOCAL_BASE="/Volumes/Thunderbolt/VM_packages"          # Thunderbolt (od pondělí)
+#LOCAL_BASE="/Users/martinkittler/VM_Safety/packages"    # interní (do pondělí)
+LOCAL_BASE="/Volumes/KD_Ext4T/VM_packages"          # Thunderbolt SSD (aktivni od 31.8.)
 
 # ── RETENCE (počet balíků) ──────────────────────────────────────────────────
 # DO PONDĚLÍ (malý interní disk, cold 2×/den): cold=1, ram=1.
 # OD PONDĚLÍ (Thunderbolt, cold 3×/den):        cold=4, ram=1.
-RETAIN_COLD=1      # pondělí → 4
+RETAIN_COLD=4      # Thunderbolt faze
 RETAIN_RAM=1
 
 # ── Pojistka volného místa na interním disku (platí jen když LOCAL_BASE = interní) ─
