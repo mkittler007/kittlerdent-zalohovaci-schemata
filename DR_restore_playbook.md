@@ -52,7 +52,7 @@ Ovládací panel → **Aktualizace a obnova → Záloha konfigurace → Obnovit*
 
    Plná konfigurace (vč. credentials, ⚠️ citlivé) v `synology_dump/HyperBackup/`.
 5. **CloudSync** (Google Drive new/old) — **NENÍ potřeba obnovovat** (Martin 16.8.2026: nepotřebuji). Jen zrcadlo, ne záloha.
-6. **Snapshot Replication** (Btrfs snapshoty složek) — znovu zapnout na složkách dle `@sharesnap` seznamu v DR dokumentu.
+6. **Snapshot Replication** (Btrfs snapshoty složek) — ⚠️ **na starém NASu NEBYL v provozu** (balík neinstalován, 0 snapshotů — ověřeno 1.9.2026), takže není co obnovovat. Zvážit ho na novém NASu nově zapnout jako on-site rollback vrstvu (viz `PREHLED_ZALOH.md` riziko E5); jinak přeskočit.
 7. **Synology Drive** (client sync port 6690, verzování: historie 1 měsíc / 10 verzí / max 100 MB + Shared Folder Sync) — nastavení NENÍ v `.dss`; hodnoty v `synology_dump/SynologyDrive/`. Znovu zapnout balík, nastavit verzování dle `setting.conf`, povolit Drive na příslušných složkách. Data Drive nejsou v HyperBackupu — kryje je Btrfs snapshot dané složky.
 
 ## 4) Ověření

@@ -56,7 +56,7 @@
 - Root: jen `sudo -i` s admin heslem (SSH root login v DSM 7 zakázán).
 
 ## 5) Vrstvy ochrany dat (co NAS dělá)
-1. **Btrfs snapshoty** (Snapshot Replication) na většině sdílených složek — metadata v `/volume1/@sharesnap/*.meta` (VM macOS M4, Claude_Project, CBCT, RTG*, Lightroom, Loxone, Pictures*, soft21backup, homes, npgroup_backup, Google_drive_new, HDD IMac, Backu_up_settings).
+1. ~~**Btrfs snapshoty** (Snapshot Replication)~~ — ⚠️ **NEJSOU v provozu** (ověřeno 1.9.2026): balík SnapshotReplication není nainstalovaný, `synosharesnapshot list <share>` = 0 snapshotů, `@sharesnap/<share>` obsahuje jen `desktop.ini`. Dřívější seznam složek s `@sharesnap/*.meta` byl jen placeholder, ne živé snapshoty. On-site rollback/verzování tedy chybí — viz `PREHLED_ZALOH.md` riziko E5.
 2. **HyperBackup → Synology C2 cloud** (offsite): cache `@img_bkp_cache/ClientCache_cloud_image_synocloud_swift.*` (běží denně, viz timestampy 15.–16.8.).
 3. **HyperBackup Vault** (balík `HyperBackupVault`) — přijímá `.hbk` zálohy (`Lightroom/Syno_Backup_1.hbk`).
 4. **Shared Folder Sync** (`@S2S/event.sqlite`) — synchronizace složek na/z jiného zařízení.
@@ -81,7 +81,7 @@ Cíl: rsync ≥ 3.2.4 na NASu → povolit `--sparse` a **poloviční objem** VM 
   (NE migrační blok mv/rmdir — ten se pouštěl jen 1× ručně v terminálu).
 
 ## 8) Naše host-side zálohovací úlohy (Mac Mini .24) mířící sem
-- `com.kittler.vm-backup` (0:00) → `~/bin/vm-backup-synology.sh` → `VM macOS M4/`. Viz `[[reference_nas_zalohy]]`, `[[project_vm_snapshots_parallels]]`.
+- **VM macOS balík** → `VM macOS M4/VM_packages/` přes `com.kittler.vmpkg.nas` (obden 23:50, retence 4). ⚠️ Starý `com.kittler.vm-backup`/`vm-backup-synology.sh` už NEjede (agent nenahraný, ověřeno 1.9.2026). Viz `PREHLED_ZALOH.md` #4, `[[project_vm_package_zaloha]]`, `[[project_vm_snapshots_parallels]]`.
 - `cz.kittlerdent.backup_claude_project` (8:00, 20:00) → `Claude_Project/`.
 - Watchdogy: `com.kittler.vm-backup-watchdog` (8:00), `…backup_claude_project.watchdog`.
 

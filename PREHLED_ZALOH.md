@@ -16,15 +16,15 @@
 | 2 | **VM macOS — noční ram balík** (`vmpkg.ram`) | tentýž bundle | interní SSD / Thunderbolt | 23:00 denně | ~4 lokálně | `VM_package_zaloha/OBNOVA.md` |
 | 3 | **VM macOS — na WD** (`vmpkg.wd`) | nejnovější noční ram balík | USB `VM_WD` `/Volumes/VM_WD/VM_packages` | 23:10 denně | **5** na WD | `VM_package_zaloha/OBNOVA.md` scénář B |
 | 4 | **VM macOS — na Synology** (`vmpkg.nas`) | nejnovější noční ram balík | Synology **.120** `/volume1/VM macOS M4/VM_packages` | 23:50 **obden** (sudý den) | **4** na NAS | `VM_package_zaloha/OBNOVA.md` scénář C |
-| 5 | **Claude_Project → NAS** (`backup_claude_project`) | iCloud `Claude_Project/` (host) | Synology **.120** `/volume1/Claude_Project/` | 08:00 + 20:00 | rsync **mirror** (bez verzí); historii kryje Btrfs snapshot složky na NASu | viz níže „Obnova Claude_Project" |
+| 5 | **Claude_Project → NAS** (`backup_claude_project`) | iCloud `Claude_Project/` (host) | Synology **.120** `/volume1/Claude_Project/` | 08:00 + 20:00 | rsync **mirror — bez lokálních verzí**; verze jen off-site v HyperBackup C2 (#8 task 62, **200 verzí**, FIFO) | viz níže „Obnova Claude_Project" |
 | 6 | **iMac zelený — VM ordinace lokální cold** | `Windows 11_Imac_zelený 2.pvm` (iMac .170) | interní SSD iMacu `~/Parallels_Backup_ordinace/backup/` | denně 12:00 | 1 | `Imac_zelený_ordinace/PLAN_OBNOVY.md` A–C |
 | 7 | **iMac zelený — VM ordinace na NAS** | lokální cold záloha (#6) | Synology **.120** `/volume1/HDD IMac ordinace/Parallels_VM_zaloha/` | 1. neděle v měsíci 13:00 | 2 (vm_current + vm_prev) | `Imac_zelený_ordinace/PLAN_OBNOVY.md` scénář D |
-| 8 | **Synology HyperBackup → C2 cloud** | sdílené složky NASu (RTG, CBCT, Lightroom, Soft21, Claude_Project, Loxone, NPGroup, HDD iMac, Backup_Settings) | Synology **C2 cloud** (`synocloud_swift`, EU, šifrované+komprimované) | denně/týdně 19:30–01:20 dle úlohy | verzování C2 dle úlohy — **⚠️ ověřit počet generací** | `DR_restore_playbook.md` bod 4 (relink na C2) |
-| 9 | **Synology Btrfs snapshoty** (Snapshot Replication) | většina sdílených složek | lokálně na NASu `/volume1/@sharesnap` | **⚠️ frekvence/počet ověřit** | **⚠️ ověřit** | `DR_restore_playbook.md` bod 6 |
-| 10 | **Synology Drive — verzování** | Drive složky | NAS | průběžně | historie 1 měsíc / 10 verzí / max 100 MB | `DR_restore_playbook.md` bod 7 |
+| 8 | **Synology HyperBackup → C2 cloud** | sdílené složky NASu (RTG, CBCT, Lightroom, Soft21, Claude_Project, Loxone, NPGroup, HDD iMac, Backup_Settings) | Synology **C2 cloud** (`synocloud_swift`, EU, šifrované+komprimované) | denně/týdně 19:30–01:20 dle úlohy | **rotace zapnutá u všech**; max verzí dle úlohy — souhrn v sekci D | `DR_restore_playbook.md` bod 4 (relink na C2) |
+| 9 | ~~Synology Btrfs snapshoty~~ **NEPOUŽITÉ** | — | — | — | **žádné** — balík SnapshotReplication není nainstalovaný, 0 snapshotů (ověřeno 1.9.2026) → viz riziko E5 | — |
+| 10 | **Synology Drive — verzování** | Drive složky | NAS | průběžně | historie 1 měsíc / 10 verzí / max 100 MB (dle `synology_dump/SynologyDrive/setting.conf`) | `DR_restore_playbook.md` bod 7 |
 | 11 | **No Problem (IMS) pull** | Synology **.120** `/volume1/npgroup_backup/database/` | iCloud `Claude_Project/Sklad/database/` | 08:00 + 16:00 | 1 (jen nejnovější) | viz níže „Obnova IMS/No Problem" |
 | 12 | **Dump 2kdent → lokální MySQL na VM** (`sync_db`) | Synology `soft21backup/webroot/backup/dbbackup` (produkce dumpuje á 2 h) | dumpy v iCloud `Claude_Project/IS_KittlerDent/databaze/`; živá DB v `/opt/homebrew/var/mysql/2kdent` (VM) | každou hodinu | **3 poslední dumpy** (~830 MB/ks) | reimport dumpu přes `sync_crm_db.sh` |
-| 13 | **DSM konfigurace `.dss`** | NAS DSM (uživatelé, složky+ACL, síť, služby) | tato složka (v šifrovaném `SECRETS_…enc`) + mimo NAS | ručně, „občas" | poslední export (⚠️ dělat pravidelně) | `DR_restore_playbook.md` bod 2 |
+| 13 | **DSM konfigurace `.dss`** | NAS DSM (uživatelé, složky+ACL, síť, služby) | tato složka (v šifrovaném `SECRETS_…enc`) + mimo NAS | **ručně** (žádná scheduler úloha); interní `configautobackup` jede denně, ale jen do NASu `/volume1/@config_backup` (nepřenositelný) | poslední ruční export 16.8.2026 (⚠️ dělat pravidelně) | `DR_restore_playbook.md` bod 2 |
 | 14 | **Time Machine** (iMacy ordinace) | zelený/žlutý iMac | USB `WD Backup 8` (+ `TM_iMac_zluty`) sparsebundly | průběžně (macOS TM) | dle místa na disku | nativní TM restore; viz [[project_tm_zaloha_ordinace_usb]] |
 | 15 | **CPU/RAM monitoring logy** (ne data, ale s retencí) | host + VM | lokálně + Synology **.120** `/volume1/Mac_mini_Pro_Logy/` | sběr á 60 s; sync 04:20/04:40 | 90 dní | n/a (jen logy) |
 | 16 | **GitHub — infra/kód** | `Zalohovací schemata/` mirror + repa `kittlerdent-*` | GitHub (privátní, účet mkittler007) | při každé změně (autopush z VM) | plná git historie | `git clone` (push jen z VM .82, klíč `github_implantaty`) |
@@ -62,8 +62,8 @@
 | **Ztráta IS/produkční DB 2kdent** | reimport přes `sync_crm_db.sh` | 3 poslední dumpy v `IS_KittlerDent/databaze/` + zdroj `soft21backup` |
 
 ### Obnova Claude_Project
-Mirror leží na `.120:/volume1/Claude_Project/` (bez verzí — je to 1:1 zrcadlo). Obnova = rsync zpět do iCloudu:
-`rsync -a --info=progress2 admin@192.168.100.120:/volume1/Claude_Project/ "/Volumes/My Shared Files/Claude_Project/"` (klíč `~/.ssh/synology_backup`, z hostu). Pro **starší verzi smazaného/přepsaného souboru** použij Btrfs snapshot složky Claude_Project na NASu (Snapshot Replication → prohlížeč snapshotů v DSM) — mirror sám verze nedrží.
+Mirror leží na `.120:/volume1/Claude_Project/` (bez verzí — je to 1:1 zrcadlo). Obnova aktuálního stavu = rsync zpět do iCloudu:
+`rsync -a --info=progress2 admin@192.168.100.120:/volume1/Claude_Project/ "/Volumes/My Shared Files/Claude_Project/"` (klíč `~/.ssh/synology_backup`, z hostu). **⚠️ Pozor: mirror NEdrží verze a NAS nemá Btrfs snapshoty** (ověřeno 1.9.2026). Smazaný/přepsaný soubor, který se už stihl promítnout do mirroru (`--delete`), je proto obnovitelný **jen z HyperBackup C2** — úloha 62 „Claude_project_Syno120", **200 verzí (FIFO)**, přes HyperBackup Explore/Restore z C2 repozitáře na NASu.
 
 ### Obnova IMS / No Problem
 Nejnovější dump DB leží v iCloud `Claude_Project/Sklad/database/` (pull 08:00/16:00, drží se 1 kopie); primární zdroj je `.120:/volume1/npgroup_backup/database/`. Obnova aplikace = nasadit tento dump zpět do No Problem/IMS instance dle jejich postupu; pull sám je jen kopie snímku, ne aplikační restore. Viz [[project_ims_pull]], [[project_no_problem_faktury]].
@@ -72,13 +72,27 @@ Nejnovější dump DB leží v iCloud `Claude_Project/Sklad/database/` (pull 08:
 
 ## D) Retence — souhrn a známé mezery
 
-**Dokumentovaná retence:** VM cold 4 · VM ram ~4 · VM WD **5** · VM NAS **4** · iMac lokální 1 · iMac NAS 2 · Synology Drive 1 měsíc/10 verzí/100 MB · IMS pull 1 · dump 2kdent **3** · CPU/RAM logy 90 dní · GitHub plná historie.
+**Dokumentovaná retence (lokální/on-site):** VM cold 4 · VM ram ~4 · VM WD **5** · VM NAS **4** · iMac lokální 1 · iMac NAS 2 · Synology Drive 1 měsíc/10 verzí/100 MB · IMS pull 1 · dump 2kdent **3** · CPU/RAM logy 90 dní · GitHub plná historie.
 
-**⚠️ Mezery k dořešení (retence neověřena/neuvedena):**
-- **HyperBackup → C2** (#8): kolik generací C2 drží — ověřit v úloze HyperBackup (Nastavení rotace).
-- **Btrfs snapshoty** (#9): frekvence a počet snapshotů na `@sharesnap` — ověřit v DSM Snapshot Replication.
-- **Claude_Project → NAS** (#5): záměrně bez verzí (mirror); jistotu verzí dává jen Btrfs snapshot té složky — ověřit, že snapshot na `/volume1/Claude_Project` je zapnutý.
-- **DSM `.dss`** (#13): není pravidelná kadence exportu — zvážit měsíční připomínku.
+**HyperBackup → C2 (off-site) — max verzí a typ rotace dle úlohy** (ověřeno na NASu 1.9.2026, `/usr/syno/etc/synobackup.conf`; rotace zapnutá u všech):
+
+| Task | Úloha | Zdroj | Max verzí | Rotace |
+|---|---|---|---|---|
+| 39 | Loxone | /Loxone | 256 | Smart Recycle |
+| 48 | RTG | RTG_Direct_Upload_IS + RTG_OLD + RTG_OPG | 256 | Smart Recycle |
+| 49 | Lightroom | Lightroom + Pictures_Direct_Upload_IS | 256 | Smart Recycle |
+| 54 | RTG_OLD | /RTG_OLD | 10 | FIFO (od nejstarší) |
+| 55 | Backup_Settings | /Backu_up_settings | 256 | FIFO |
+| 57 | NP_Group | /npgroup_backup | 59 | FIFO |
+| 59 | CBCT | /CBCT | 256 | Smart Recycle |
+| 60 | Soft21 | /soft21backup | 12 | Smart Recycle |
+| 61 | HDD iMac | /HDD IMac ordinace | 10 | Smart Recycle |
+| 62 | **Claude_Project** | /Claude_Project | **200** | FIFO |
+
+Smart Recycle = ředí (hodinové verze ~1 den → denní ~28 dní → týdenní), N = horní strop počtu verzí. FIFO = drží posledních N, maže nejstarší.
+
+**Zbývající (nekritické) k dořešení:**
+- **DSM `.dss`** (#13): žádná automatická scheduler úloha pro přenositelný export — dělá se ručně (poslední 16.8.2026). Zvážit měsíční připomínku. Interní `configautobackup` (denně do `/volume1/@config_backup`) přenositelný `.dss` nenahrazuje.
 
 ---
 
@@ -88,6 +102,7 @@ Nejnovější dump DB leží v iCloud `Claude_Project/Sklad/database/` (pull 08:
 2. **`WD Backup 8` (TM svazek) hlásí 100 % inodů** — hlídat, aby nezačal odmítat zápisy Time Machine.
 3. **Dump 2kdent neleží na disku VM**, jen na sdíleném iCloudu; na VM je pouze živá naimportovaná DB. Binlogy se na VM **netvoří** (`skip-log-bin`) — VM disk se jimi neplní; pravidlo o PURGE binlogů je dnes bezpředmětné (viz [[project_vm_disk_binlogy]]).
 4. **Off-site vrstva je jediná = C2 cloud.** Vše ostatní je on-site (Mac Mini + NAS + USB v jedné lokalitě). Při požáru/krádeži lokality drží data jen HyperBackup C2 → jeho funkčnost a retence jsou kritické.
+5. **NAS nemá žádné lokální Btrfs snapshoty** (balík SnapshotReplication není nainstalovaný, 0 snapshotů — ověřeno 1.9.2026). Důsledek: on-site není žádná rychlá „rollback" / ransomware-recovery vrstva ani verzování mirroru. Smazaný/poškozený/zašifrovaný soubor, jakmile se promítne do mirroru, je obnovitelný **jen z off-site C2** (verze dle úlohy, viz sekce D). Zvážit zapnutí Snapshot Replication aspoň na `Claude_Project`, `soft21backup` a RTG/CBCT jako levnou on-site pojistku.
 
 ---
 
