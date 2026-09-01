@@ -6,6 +6,13 @@ Paměť: [[project_vm_snapshots_parallels]], [[project_vm_disk_binlogy]], [[refe
 
 ---
 
+> ## ⚠️ LEGACY / nahrazeno (ověřeno 1.9.2026)
+> Zálohovací mechanismus popsaný v tomto dokumentu (`vm-backup-synology.sh` = týdenní přímý APFS klon → NAS, retence 7+1, agent `com.kittler.vm-backup`; a `vm-backup-wd.sh` obden → WD) **už NEBĚŽÍ** — ani jeden z agentů `com.kittler.vm-backup` / `com.kittler.vm-backup-wd` není nahraný v `launchctl`. `vm-backup-wd.sh` navíc cílil na `/Volumes/My Book 1`, který na hostu neexistuje.
+>
+> **Živá VM záloha dnes = `VM_package_zaloha/`** (agenti `vmpkg.cold/ram/wd/nas`: cold 06/18, ram 23:00, WD 23:10 ret5, Synology obden 23:50 ret4). Sekce 1 (kontext snapshotů, „start-up bezclaude" baseline NEmazat) a poznatky o kompakci **platí dál**; retenční/plánovací část ber jako historickou. Aktuální stav a plán obnovy viz `../PREHLED_ZALOH.md` a `../VM_package_zaloha/OBNOVA.md`.
+
+---
+
 ## 1. Kontext
 
 - VM = `~/Parallels/macOS.macvm`, UUID `{cf7a9c8f-39b4-4691-8c25-40ebae6a0768}`, řízeno `prlctl` **na hostu** (ne uvnitř VM).
