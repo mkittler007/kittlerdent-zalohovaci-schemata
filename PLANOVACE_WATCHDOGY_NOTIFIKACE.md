@@ -98,7 +98,7 @@ se aktualizuje:
 | `com.kittler.deadman_ping` | watchdog (dead-man) | á 5 min + RunAtLoad | `~/bin/kd_alive_ping.sh` | healthchecks.io (poplach = externě) | „dům žije" ping; ticho → externí alert | ne (externí) |
 | `com.kittler.notify.outbox` | služba (retry) | á 5 min + RunAtLoad | `~/bin/notify.py` | Telegram→e-mail→iMessage | prázdní frontu nedoručených | **JE notify.py** |
 | `com.kittler.supervisor` | watchdog (meta) | á 10 min + RunAtLoad | `~/kd_supervisor.py` | PANIKA multi-kanál / běžný Telegram | VM dole / tep >15 min / služby VM / host KeepAlive | ano (critical) |
-| `com.kittler.timemachine_watchdog` | watchdog | denně 10:15 | `~/bin/timemachine_watchdog.py` | e-mail (SMTP) | TM záloha starší > 5 dní; antispam 24 h | ne (přímý SMTP) |
+| `com.kittler.timemachine_watchdog` | watchdog | denně 10:15 | `~/bin/timemachine_watchdog.py` | e-mail (SMTP) → notify.py fallback | TM záloha starší > 5 dní; antispam 24 h | ano (fallback od 1.9.) |
 | `com.kittler.garmin_hr_guard` | plánovač (guard) | denně 10:30 | `~/bin/garmin_hr_guard.py` | Telegram (přímý) | fēnix změnil HR zóny → přenastaví + hlásí | ne (přímý TG) |
 | `com.kittler.ims_pull` | plánovač (rsync) | 8:00 a 16:00 | `~/bin/ims_pull.sh` | Telegram (přímý) | pull IMS/IS zálohy; alarm až 2. selhání | ne (2-strike) |
 | `com.kittler.ws_backup_watch` | watchdog | á 30 min + RunAtLoad | `~/bin/ws_backup_watch.py` | Telegram; tvrdá selhání i e-mail/iMessage | WhiteStore/Ahsay OBM selhání/kolize; antispam 6 h | ano |
@@ -146,7 +146,7 @@ v `launchctl list` (dokumentace v `Retence VM macOS/`).
 | `com.kittlerdent.kredit` | watchdog | denně 8:00 | `~/bin/kontrola_kreditu.sh` | notify.py critical | Anthropic kredit pod prahem / API test selhal | **ano** |
 | `cz.kittlerdent.implantaty.daily_check` | watchdog | Po–Pá 10:00 | `manage.py daily_stock_check` | notify.py (oba příjemci) | podkročení min. stavů zapůjčených implantátů | **ano** |
 | `cz.kittlerdent.implantaty.watchdog` | watchdog | á 5 min | `~/bin/watchdog_implantaty.sh` | e-mail (martin+recepce) + Telegram | Django down po restartu / DB dump zastaralý (6–20, throttle 1 h) | ano (escalate critical) |
-| `com.kittlerdent.watchdog` | watchdog | á 5 min | `VV/watchdog_web_vp.sh` | osascript (lokál VM) | web_vp spadl / dump zastaralý → restart | **ne (jen lokál)** |
+| `com.kittlerdent.watchdog` | watchdog | á 5 min | `VV/watchdog_web_vp.sh` | osascript + notify.py | web_vp spadl / dump zastaralý → restart; + detekce IS_CRM | ano (od 1.9.) |
 | `cz.kittlerdent.disk_alert` | watchdog | á 1 h | `~/bin/disk_alert.py` | Telegram + e-mail | datové volume VM ≥ 80 % | ano |
 | `com.fitness.heartbeat` | watchdog | denně 21:45 | `~/bin/fitness_heartbeat.py` | notify.py critical (key `fitness_heartbeat`) | fitness sync selhal 2 dny za sebou | ano (2-strike) |
 | `com.kittler.telegram_guard` | watchdog | á 30 min + WatchPaths | `~/bin/telegram_guard_watchdog.py` | Telegram (`--force`) | update pluginu smazal outbound-only patch listeneru | ano |
@@ -154,7 +154,7 @@ v `launchctl list` (dokumentace v `Retence VM macOS/`).
 | `com.kittler.dopravci_watch` | watchdog | 7:45 / 11:30 / 15:00 | `~/bin/dopravci_watch.py` | iMessage + Telegram + e-mail | mail dopravce (DHL/PPL/ČP); odhad vs. ordinace | ano |
 | `com.kittler.balik_watch` | watchdog | á 10 min | `~/bin/balik_watch.py` | e-mail + iMessage | konkrétní balík „připraveno"; pak self-off | ano |
 | `cz.kittlerdent.watch2200` | watchdog | 21:50 | `watch_2200_launcher.sh` | jen chyba copy z VirtioFS → notify.py critical | večerní snapshot procesů před 22:00 | ano (launcher) |
-| `cz.kittlerdent.watch_is_crm` | watchdog (WatchPaths) | při vzniku složky | `system_health/watch_is_crm.sh` | osascript (lokál VM) | vznik IS_CRM_software21 (zachytí + smaže) | ne (lokál) |
+| `cz.kittlerdent.watch_is_crm` | watchdog (WatchPaths) | při vzniku složky | `system_health/watch_is_crm.sh` | osascript + notify.py | vznik IS_CRM_software21 (zachytí + smaže) | ano (od 1.9.) |
 | `com.kittler.okna_snapshot` | sampler | á 60 s | `~/bin/okna_snapshot.sh` | ne (po restartu hlásí přes catchup) | evidence běžících oken | ne |
 | `com.fitness.activity_notify` | plánovač | á 15 min | `~/bin/activity_notify.py` | Telegram | nová aktivita Ride/Run ≥10 min → rozbor | ? |
 | `com.fitness.dashboard.evening` | plánovač | 18:30–21:30 á 15 min | `evening_report.py` | Telegram | večerní health sumář (1×/den) | ano |
@@ -176,7 +176,7 @@ v `launchctl list` (dokumentace v `Retence VM macOS/`).
 | `cz.kittlerdent.obec_udrzba_stiznost` | plánovač | 10:00 | `obec_udrzba_stiznost_mailer.py` | e-mail (martin@kittlerdent.cz) | stížnost/údržba obec | ano |
 | `cz.kittlerdent.rocni_doklady` | plánovač | 9:07 | `rocni_doklady_reminder.py` | e-mail (SMTP) | roční sběr dokladů (14.12.) | ano |
 | `com.kittler.telfa_tuesday` (+`_backup`) | plánovač (datum-gate) | Út 15:05 / 16:10 | `telfa_tuesday_run.sh` → `telfa_send.py` | e-mail (martin@kittler.cz + me.com) | návrh stromu Telfa PDF | ano |
-| `com.kittler.telfa_vp30` (+`_backup`) | plánovač | 9:15 / 10:10 | `telfa_vp30_run.sh` → `telfa_send.py` | e-mail | měsíční VP hlášení; DEFER když dovolená | ano |
+| `com.kittler.telfa_vp30` (+`_backup`) | plánovač | 13:15 / 14:10 | `telfa_vp30_run.sh` → `telfa_send.py` | e-mail | měsíční VP hlášení; DEFER když dovolená; přesunuto z 9:15 kvůli kolizi s reimportem DB (1.9.2026) | ano |
 | `com.kittler.telfa_zpv` / `_zpv2` (+`_backup`) | plánovač | 9:15 / 10:10 | `telfa_zpv_run.sh` → `telfa_send.py` | e-mail s PDF | Telfa ZPV hlášení #1/#2 | ano |
 | `com.kittler.telfa_dovolena_propose` | plánovač | 15:00 | `telfa_dovolena_run.sh` | Telegram (návrh, čeká na „ok") | navrhne změnu hlášky dovolená | ? |
 | `com.kittler.telfa_dovolena_enforce` | plánovač | 0:05 a 6:00 | `telfa_dovolena_run.sh` | Telegram | přepne Telfa hlášku dle IS plánovače | ? |
@@ -227,15 +227,18 @@ v `launchctl list` (dokumentace v `Retence VM macOS/`).
 ## ⚠️ Mezery / rizika (k dořešení)
 
 Globální pravidlo (CLAUDE.md) říká: **každá notifikace přes `~/bin/notify.py`** (cross-kanál + heartbeat + outbox).
-Následující zatím notifikují **mimo** tuto pojistku — pokud primární kanál selže, zpráva zmizí bez fallbacku:
 
-- **Jen `osascript display notification` (viditelné jen na GUI VM, žádný fallback):** `com.kittlerdent.watchdog` (web_vp), `cz.kittlerdent.watch_is_crm`.
-- **Jen přímý Telegram / `telegram_send.sh` (bez notify.py fallbacku):** `garmin_hr_guard`, `ims_pull`, `vmpkg.wd`, `vmpkg.hlidac`, `voicememo_note`, telfa_dovolena_*, backup_claude_project.watchdog, eval_claude_backup.
-- **Jen přímý SMTP / Django `send_mail` (bez fallbacku):** `timemachine_watchdog`, `sklad_report`, implantáty `action_digest` / `monthly_report` / `sync_vlastni_sklad`.
+### ✅ Vyřešeno 1.9.2026 — dřívější „slepé" body
+- **`com.kittlerdent.watchdog` (web_vp)** — všechny 3 poplachové cesty (pád serveru → restart, zastaralý DB dump, detekce IS_CRM) nově volají i `notify.py` (osascript ponechán jako lokální doplněk). Ověřeno `bash -n` + reálný test doručení.
+- **`cz.kittlerdent.watch_is_crm`** — detekce IS_CRM_software21 nově i přes `notify.py` (dřív jen osascript = vidět jen na GUI VM). Ověřeno.
+- **`com.kittler.timemachine_watchdog`** — `send_email()` zabaleno do try/except s **fallbackem na `notify.py`** při selhání SMTP (dřív SMTP-only, při chybě spadl bez alertu). `py_compile` OK, záloha `.bak_YYYYMMDD` na hostu.
+
+### Zbývající single-channel (nižší priorita — Martina reálně dosahují)
+Notifikují jen jedním kanálem, ale ten normálně **funguje** (na rozdíl od výše, kde alert vůbec neopustil VM).
+Přímý kanál je u části **záměr** (drží časové okno / 2-strike). Sjednotit na `notify.py` postupně, každou změnu promítnout sem:
+- **Přímý Telegram / `telegram_send.sh`:** `garmin_hr_guard`, `ims_pull` (2-strike), `vmpkg.wd`, `vmpkg.hlidac`, `voicememo_note`, telfa_dovolena_*, `backup_claude_project.watchdog` (2-strike), `eval_claude_backup`.
+- **Přímý SMTP / Django `send_mail`:** `sklad_report`, implantáty `action_digest` / `monthly_report` / `sync_vlastni_sklad`.
 - **Nedořešený kanál (`?`):** `moncpuram.report`, `activity_notify` (kanál .py neověřen), telfa_dovolena_* (notify.py fallback neověřen).
-
-> Pozn.: u části z nich je přímý kanál záměr (drží časové okno / 2-strike). Sjednocení na `notify.py`
-> řešit postupně; každou změnu promítnout sem.
 
 ---
 
