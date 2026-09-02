@@ -102,7 +102,8 @@ Smart Recycle = ředí (hodinové verze ~1 den → denní ~28 dní → týdenní
 2. **`WD Backup 8` (TM svazek) hlásí 100 % inodů** — hlídat, aby nezačal odmítat zápisy Time Machine.
 3. **Dump 2kdent neleží na disku VM**, jen na sdíleném iCloudu; na VM je pouze živá naimportovaná DB. Binlogy se na VM **netvoří** (`skip-log-bin`) — VM disk se jimi neplní; pravidlo o PURGE binlogů je dnes bezpředmětné (viz [[project_vm_disk_binlogy]]).
 4. **Off-site vrstva je jediná = C2 cloud.** Vše ostatní je on-site (Mac Mini + NAS + USB v jedné lokalitě). Při požáru/krádeži lokality drží data jen HyperBackup C2 → jeho funkčnost a retence jsou kritické.
-5. **NAS nemá žádné lokální Btrfs snapshoty** (balík SnapshotReplication není nainstalovaný, 0 snapshotů — ověřeno 1.9.2026). Důsledek: on-site není žádná rychlá „rollback" / ransomware-recovery vrstva ani verzování mirroru. Smazaný/poškozený/zašifrovaný soubor, jakmile se promítne do mirroru, je obnovitelný **jen z off-site C2** (verze dle úlohy, viz sekce D). Zvážit zapnutí Snapshot Replication aspoň na `Claude_Project`, `soft21backup` a RTG/CBCT jako levnou on-site pojistku.
+5. **NAS nemá žádné lokální Btrfs snapshoty** (balík SnapshotReplication není nainstalovaný, 0 snapshotů — ověřeno 1.9.2026). Důsledek: on-site není žádná rychlá „rollback" / ransomware-recovery vrstva ani verzování mirroru. Smazaný/poškozený/zašifrovaný soubor, jakmile se promítne do mirroru, je obnovitelný **jen z off-site C2** (verze dle úlohy, viz sekce D — Claude_Project 200 verzí).
+   - **ROZHODNUTÍ (Martin, 2.9.2026): snapshoty ZATÍM NEzapínat**, verzování drží C2 (dostatečné; snapshoty = jen rychlejší lokální obnova + druhá vrstva, ne díra v ochraně). Kdyby se to příště chtělo: denní snapshot / retence 30 dní na `Claude_Project` + `soft21backup`, odhad záboru **~150–300 GB** (NAS je na 44 %, 6 TB volných). Detail v paměti [[project_nas_snapshoty_odlozeno]].
 
 ---
 
