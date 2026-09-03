@@ -6,9 +6,19 @@ set -u
 DIR="$(cd "$(dirname "$0")" && pwd)"; . "$DIR/config.sh"
 LOG="$LOG_DIR/prenos_na_synology.log"; ts(){ date +%FT%T%z; }; log(){ echo "$(ts) $*" >> "$LOG"; }
 
-# OBDEN: agent fajruje denně, tady se pustí jen v SUDÝ den (epoch_day % 2 == 0).
+# OBDEN: agent fajruje denně, tady se normálně pustí jen v SUDÝ den (epoch_day % 2 == 0).
+# Výjimka (fix 2026-09-03): v LICHÝ den přesto DOŽENE přenos, pokud je nejnovější offsite
+# kopie na NASu starší než 48 h (nebo chybí) = předchozí sudý přenos selhal. Bez toho by
+# kickstart-retry hlídače spadlý do lichého dne jen no-opnul a stáří by přeteklo do alertu.
 epoch_day=$(( $(date +%s) / 86400 ))
-if [ $(( epoch_day % 2 )) -ne 0 ]; then log "Obden gate: dnes lichý den — nekopíruje se."; exit 0; fi
+if [ $(( epoch_day % 2 )) -ne 0 ]; then
+  nas_m=$(ssh $SSH_OPTS "$SYNO_USER@$SYNO_HOST" "p=\$(ls -1dt \"$NAS_BASE\"/macOS_ram_*.macvm 2>/dev/null | head -1); [ -n \"\$p\" ] && stat -c %Y \"\$p\"" 2>/dev/null)
+  nas_age=$([ -n "$nas_m" ] && echo $(( ( $(date +%s) - nas_m ) / 3600 )) || echo 9999)
+  if [ "$nas_age" -lt 48 ]; then
+    log "Obden gate: lichý den, offsite kopie svěží (${nas_age}h) — nekopíruje se."; exit 0
+  fi
+  log "Obden gate: lichý den, ale offsite kopie stará/chybí (${nas_age}h) — DOŽENU (předchozí sudý přenos zřejmě selhal)."
+fi
 
 PKG=$(ls -1dt "$LOCAL_BASE/macOS_ram_"*.macvm 2>/dev/null | head -1)
 [ -n "$PKG" ] || { log "Žádný macOS_ram_* v $LOCAL_BASE — nic k přenosu."; exit 0; }
