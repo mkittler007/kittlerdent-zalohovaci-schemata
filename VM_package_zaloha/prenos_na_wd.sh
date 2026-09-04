@@ -22,8 +22,14 @@ PKG=$(ls -1dt "$LOCAL_BASE/macOS_ram_"*.macvm 2>/dev/null | head -1)
 [ -n "$PKG" ] || { log "Žádný macOS_ram_* v $LOCAL_BASE — nic k přenosu."; exit 0; }
 NAME=$(basename "$PKG")
 
-log "kopie $NAME → WD ($WD_BASE)…"
-if "$RSYNC" -a --partial --inplace "$PKG/" "$WD_BASE/$NAME/" 2>>"$LOG"; then
+# PREV = nejnovější existující WD balík (kromě cíle) → --link-dest = hardlink dedup nezměněných 128GB .hds bandů.
+# Bez dedup byl každý ram balík plná ~900G kopie → 5× ≈ 4,5T přeplnilo WD (sdílí kontejner s TM). Viz legacy vm-backup-wd.sh.
+# POZOR: --link-dest je NEslučitelné s --inplace (to by přepsalo hardlinkovaný předchozí balík) → --inplace pryč.
+PREV=$(ls -1dt "$WD_BASE/macOS_ram_"*.macvm 2>/dev/null | grep -vF "$WD_BASE/$NAME" | head -1)
+LINKDEST=""; [ -n "$PREV" ] && LINKDEST="--link-dest=$PREV"
+
+log "kopie $NAME → WD ($WD_BASE)${PREV:+ [dedup vs $(basename "$PREV")]}…"
+if "$RSYNC" -rlt -S --delete $LINKDEST "$PKG/" "$WD_BASE/$NAME/" 2>>"$LOG"; then
   log "OK na WD: $NAME"
 else
   log "CHYBA kopie na WD (rc=$?)"; notify "VM záloha WD: kopie $NAME selhala"; exit 1
