@@ -43,6 +43,14 @@ MAX_RETRY=3
 log(){ printf '%s  %s\n' "$(date '+%F %T')" "$*" | tee -a "$LOG"; }
 run_nas(){ "${SSH_NAS[@]}" "$NAS" "$@"; }
 
+# --- víkendová pojistka: v So/Ne se na Synology NEzálohuje (přání Martina 5.9.2026) ---
+#     Lokální cold na iMacu běží dál každý den; jen push na NAS se o víkendu vynechá.
+DOW=$(date +%u)   # 1=Po ... 6=So, 7=Ne
+if [ "$DOW" -ge 6 ]; then
+  log "víkend (den $DOW) — na Synology se nezálohuje, přeskakuji"
+  exit 0
+fi
+
 # --- lock ---
 if ! mkdir "$LOCK" 2>/dev/null; then log "PŘESKAKUJI: běží už jiná instance"; exit 0; fi
 trap 'rmdir "$LOCK" 2>/dev/null' EXIT INT TERM

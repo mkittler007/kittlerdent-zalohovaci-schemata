@@ -80,9 +80,9 @@ So: Backup_settings 01:50, Claude_project 21:20, Soft21 21:40, CBCT 22:30, NP_Gr
 
 ## 4) Doporučení pro novou zálohu iMac VM (ordinace)
 
-**a) iMac VM → NAS (rsync, `com.kittler.parallels-nas-daily`)** — nastaveno **13:00 denně**. ✅ Dobře: hned po lokální cold (12:00), padne do poledního klidu, LAN volná. (V Ne 13:00 se lehce potká s „VM macOS M4 cold offsite" — obě jen delta, nevadí; pro jistotu lze posunout na 13:30.)
+**a) iMac VM → NAS (rsync, `com.kittler.parallels-nas-daily`)** — nastaveno **13:00, jen Po–Pá** (So/Ne se na Synology NEzálohuje, pojistka `date +%u >= 6` ve skriptu, přání Martina 5.9.). ✅ Hned po lokální cold (12:00), poledne klid, LAN volná. Lokální cold na iMacu běží dál každý den; víkend vynechává jen push na NAS.
 
-**b) iMac offsite_current → C2 (HyperBackup, ZALOŽIT V GUI)** — doporučený čas **14:00 denně**. ⭐
+**b) iMac offsite_current → C2 (HyperBackup, ZALOŽIT V GUI)** — doporučený čas **14:00, jen Po–Pá** (v DSM rozvrhu odškrtnout So+Ne, ať drží stejnou logiku jako rsync). ⭐
 - Naváže na rsync (nová cold verze je na NASu ~13:50), C2 upload delty = minuty.
 - Je v **denním klidu**, **daleko od večerní C2 špičky (19:30–23:15)**, od noční VM ram (obden) i od noční Lightroom C2 (02:30).
 - Přes den o C2 uplink pere jen krátký WhiteStore (RTG 15:00 až za hodinu) → 14:00 čisté.
