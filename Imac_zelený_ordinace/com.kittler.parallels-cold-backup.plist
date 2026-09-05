@@ -11,12 +11,14 @@
         <string>/Users/martinkittler/Parallels_Backup_ordinace/parallels_cold_backup.sh</string>
     </array>
 
-    <!-- Denně ve 12:00 (kolem poledne). Pokud iMac spí, launchd doběhne po probuzení. -->
+    <!-- Jen v pracovní dny Po/St/Pá v 07:00 (přání Martina 5.9.2026, bez víkendu).
+         Weekday: 1=Po, 3=St, 5=Pá. Pokud iMac spí, launchd doběhne po probuzení. -->
     <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key><integer>12</integer>
-        <key>Minute</key><integer>0</integer>
-    </dict>
+    <array>
+        <dict><key>Weekday</key><integer>1</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>3</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Weekday</key><integer>5</integer><key>Hour</key><integer>7</integer><key>Minute</key><integer>0</integer></dict>
+    </array>
 
     <key>RunAtLoad</key>
     <false/>

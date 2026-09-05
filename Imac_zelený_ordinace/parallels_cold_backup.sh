@@ -113,5 +113,15 @@ SIZE=$(du -sh "$DEST/$BUNDLE" 2>/dev/null | awk '{print $1}')
 log "HOTOVO OK — velikost zálohy: $SIZE, downtime: ${DOWNTIME}s, celkem: ${DUR}s, volno: $(free_gb)GB"
 printf 'OK  %s  size=%s  downtime=%ss  total=%ss  free_after=%sGB\n' \
   "$(date '+%F %T')" "$SIZE" "$DOWNTIME" "$DUR" "$(free_gb)" >"$STATUS"
+
+# --- řetězení vrstvy 2: HNED po úspěšném coldu spusť kopii na NAS ---
+#     (přání Martina 5.9.2026: NAS ne v pevný čas, ale ihned po doběhnutí coldu).
+#     Běží asynchronně přes launchctl (vlastní logy nas_sync.log / NAS_STATUS.txt).
+if launchctl kickstart -k "gui/$(id -u)/com.kittler.parallels-nas-daily" >>"$LOG" 2>&1; then
+  log "vrstva 2: NAS kopie odstartována (launchctl kickstart)"
+else
+  log "POZOR: nepodařilo se odstartovat NAS agenta (kickstart selhal) — zkontroluj com.kittler.parallels-nas-daily"
+fi
+
 log "===== KONEC (rc=0) ====="
 exit 0

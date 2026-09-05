@@ -8,8 +8,8 @@ USER_=martinkittler
 KEY="$HOME/.ssh/id_ed25519_macmini"
 HERE="$(cd "$(dirname "$0")" && pwd)"
 SSH=(ssh -i "$KEY" -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 "$USER_@$IMAC")
-L_LOCAL=com.kittler.parallels-cold-backup       # denní lokální cold záloha (12:00)
-L_NAS=com.kittler.parallels-nas-daily           # DENNÍ kopie na NAS (13:00), retence 10 dní
+L_LOCAL=com.kittler.parallels-cold-backup       # lokální cold záloha (Po/St/Pá 07:00)
+L_NAS=com.kittler.parallels-nas-daily           # kopie na NAS, řetězeně hned po coldu, retence 10 verzí
 L_NAS_OLD=com.kittler.parallels-nas-monthly     # starý měsíční agent (odregistrovat)
 
 echo "== složky na iMacu =="

@@ -11,13 +11,9 @@
         <string>/Users/martinkittler/Parallels_Backup_ordinace/nas_daily_sync.sh</string>
     </array>
 
-    <!-- Denně 13:00 = po polední lokální cold záloze (12:00), zdroj je čerstvý. -->
-    <key>StartCalendarInterval</key>
-    <dict>
-        <key>Hour</key><integer>13</integer>
-        <key>Minute</key><integer>0</integer>
-    </dict>
-
+    <!-- BEZ vlastního plánu: spouští se ŘETĚZENĚ hned po úspěšné lokální cold záloze
+         (vrstva 1 volá `launchctl kickstart` tohoto agenta). Poběží tedy jen Po/St/Pá
+         po doběhnutí coldu (přání Martina 5.9.2026). -->
     <key>RunAtLoad</key>
     <false/>
 
