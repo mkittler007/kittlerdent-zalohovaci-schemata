@@ -5,31 +5,30 @@ PRL="/Applications/Parallels Desktop.app/Contents/MacOS/prlctl"
 SRC="/Volumes/KD_Ext4T/macOS.macvm"
 
 # ── REŽIM ÚLOŽIŠTĚ LOKÁLNÍCH BALÍKŮ ─────────────────────────────────────────
-# DO PONDĚLÍ: interní disk (COW klon = instantní, ~0 místa; NEchrání proti pádu disku).
-# OD PONDĚLÍ (Thunderbolt): zakomentuj interní řádek, odkomentuj Thunderbolt + zvedni RETAIN_COLD na 4.
-#LOCAL_BASE="/Users/martinkittler/VM_Safety/packages"    # interní (do pondělí)
+#LOCAL_BASE="/Users/martinkittler/VM_Safety/packages"    # interní (legacy)
 LOCAL_BASE="/Volumes/KD_Ext4T/VM_packages"          # Thunderbolt SSD (aktivni od 31.8.)
 
-# ── RETENCE (počet balíků) ──────────────────────────────────────────────────
-# DO PONDĚLÍ (malý interní disk, cold 2×/den): cold=1, ram=1.
-# OD PONDĚLÍ (Thunderbolt, cold 3×/den):        cold=4, ram=1.
-RETAIN_COLD=4      # Thunderbolt faze
-RETAIN_RAM=1
+# ── RETENCE (počet balíků) — cílové schéma MK 5.9.2026 ──────────────────────
+# Thunderbolt: cold 06/13/18 (drž 4), ram 07:00 + 23:00 (drž 2 = poslední denní + poslední noční).
+RETAIN_COLD=4      # Thunderbolt cold (06/13/18)
+RETAIN_RAM=2       # Thunderbolt ram: poslední noční (23:00) + poslední denní (07:00)
 
 # ── Pojistka volného místa na interním disku (platí jen když LOCAL_BASE = interní) ─
 MIN_FREE_GB=40     # když volno < tohle, ořízne nejstarší cold balík dřív, než udělá nový
 
-# ── WD (USB) — denně, retence 5. Runner (bash) má Full Disk Access.
-# POZOR: „My Book" je disk Time Machine → macOS tam ZAKAZUJE zápis (i s FDA). Proto se použije
-# SAMOSTATNÁ APFS volume „VM_WD" ve stejném kontejneru (NENÍ TM, sdílí místo s TM, zápis OK).
-# Vytvořeno 29.8.: diskutil apfs addVolume disk7 APFS VM_WD (spouštět přes launchd-bash s FDA). ─
+# ── WD (USB) — 1× denně v noci (~23:10). Runner (bash) má Full Disk Access. ──
+# Kopíruje POSLEDNÍ COLD (drž 3 dny) + POSLEDNÍ RAM (drž 1). link-dest dedup proti stejnému typu.
+# POZOR: „My Book" je disk Time Machine → zápis zakázán i s FDA. Proto SAMOSTATNÁ APFS volume „VM_WD"
+# ve stejném kontejneru (NENÍ TM, sdílí místo s TM, zápis OK).
 WD_BASE="/Volumes/VM_WD/VM_packages"
-RETAIN_WD=5
+RETAIN_WD_COLD=3   # WD: poslední cold z Thunderu, drž 3 dny
+RETAIN_WD_RAM=1    # WD: 1 ram
 
-# ── Synology (.120) — OBDEN, retence 4. Cíl v existujícím zapisovatelném share. ─
+# ── Synology (.120) — off-host. Cold KAŽDOU NOC (~23:50, drž 3), RAM jen ČTVRTEK (drž 1). ──
 SYNO_USER="admin"; SYNO_HOST="192.168.100.120"; SYNO_KEY="$HOME/.ssh/synology_backup"
 NAS_BASE="/volume1/VM macOS M4/VM_packages"
-RETAIN_SYNO=4
+RETAIN_SYNO_COLD=3 # Synology: intradenní cold nočně, drž 3 dny
+RETAIN_SYNO_RAM=1  # Synology: ram týdně (čtvrtek), drž 1
 
 LOG_DIR="/Users/martinkittler/VM_Safety"
 TG_ENV="$HOME/.vm-backup-telegram.env"

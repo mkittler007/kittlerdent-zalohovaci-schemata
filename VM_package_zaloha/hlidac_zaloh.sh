@@ -63,7 +63,7 @@ check(){ local n="$1" age="$2" thr="$3" ag="$4"
 
 check cold "$(age_local "$LOCAL_BASE" 'macOS_cold_*.macvm')" 15 cold
 check ram  "$(age_local "$LOCAL_BASE" 'macOS_ram_*.macvm')"  27 ram
-check syno "$(age_nas 'macOS_ram_*.macvm')" 51 nas
+check syno "$(age_nas 'macOS_cold_*.macvm')" 27 nas
 
 # WD (VM_WD): když disk odpojen → nelze zálohovat, přeskoč bez poplachu; jinak normální fail→retry→alert
 WDVOL="$(dirname "$WD_BASE")"

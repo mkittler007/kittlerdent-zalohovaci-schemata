@@ -12,10 +12,10 @@
 
 | # | Schéma | Zdroj | Cíl (kde leží) | Čas | Retence | Plán obnovy |
 |---|---|---|---|---|---|---|
-| 1 | **VM macOS — cold balík** (`vmpkg.cold`) | Parallels `~/Parallels/macOS.macvm` (host .24) | interní SSD → Thunderbolt `KD_Ext4T` | 06:00 + 18:00 | 4 lokálně | `VM_package_zaloha/OBNOVA.md` scénář A |
-| 2 | **VM macOS — noční ram balík** (`vmpkg.ram`) | tentýž bundle | interní SSD / Thunderbolt | 23:00 denně | ~4 lokálně | `VM_package_zaloha/OBNOVA.md` |
-| 3 | **VM macOS — na WD** (`vmpkg.wd`) | nejnovější noční ram balík | USB `VM_WD` `/Volumes/VM_WD/VM_packages` | 23:10 denně | **5** na WD | `VM_package_zaloha/OBNOVA.md` scénář B |
-| 4 | **VM macOS — na Synology** (`vmpkg.nas`) | nejnovější noční ram balík | Synology **.120** `/volume1/VM macOS M4/VM_packages` | 23:50 **obden** (sudý den) | **4** na NAS | `VM_package_zaloha/OBNOVA.md` scénář C |
+| 1 | **VM macOS — cold balík** (`vmpkg.cold`) | Parallels `macOS.macvm` (host .24, na Thunderboltu) | Thunderbolt `KD_Ext4T` | **06:00 / 13:00 / 18:00** | 4 lokálně | `VM_package_zaloha/OBNOVA.md` scénář A |
+| 2 | **VM macOS — ram balík** (`vmpkg.ram`) | tentýž bundle | Thunderbolt `KD_Ext4T` | **07:00 + 23:00** denně | **2** (poslední denní + noční) | `VM_package_zaloha/OBNOVA.md` |
+| 3 | **VM macOS — na WD** (`vmpkg.wd`) | nejnovější **cold + ram** z Thunderu | USB `VM_WD` `/Volumes/VM_WD/VM_packages` | 23:10 denně | **cold 3 + ram 1** (link-dest dedup) | `VM_package_zaloha/OBNOVA.md` scénář B |
+| 4 | **VM macOS — na Synology** (`vmpkg.nas`) | **cold (nočně) + ram (čtvrtek)** z Thunderu | Synology **.120** `/volume1/VM macOS M4/VM_packages` | cold 23:50 **denně**; ram **čtvrtek** | **cold 3 + ram 1** | `VM_package_zaloha/OBNOVA.md` scénář C |
 | 5 | **Claude_Project → NAS** (`backup_claude_project`) | iCloud `Claude_Project/` (host) | Synology **.120** `/volume1/Claude_Project/` | 08:00 + 20:00 | rsync **mirror — bez lokálních verzí**; verze jen off-site v HyperBackup C2 (#8 task 62, **200 verzí**, FIFO) | viz níže „Obnova Claude_Project" |
 | 6 | **iMac zelený — VM ordinace lokální cold** | `Windows 11_Imac_zelený 2.pvm` (iMac .170) | interní SSD iMacu `~/Parallels_Backup_ordinace/backup/` | denně 12:00 | 1 | `Imac_zelený_ordinace/PLAN_OBNOVY.md` A–C |
 | 7 | **iMac zelený — VM ordinace na NAS** | lokální cold záloha (#6) | Synology **.120** `/volume1/HDD IMac ordinace/Parallels_VM_zaloha/` | 1. neděle v měsíci 13:00 | 2 (vm_current + vm_prev) | `Imac_zelený_ordinace/PLAN_OBNOVY.md` scénář D |
@@ -73,7 +73,7 @@ Nejnovější dump DB leží v iCloud `Claude_Project/Sklad/database/` (pull 08:
 
 ## D) Retence — souhrn a známé mezery
 
-**Dokumentovaná retence (lokální/on-site):** VM cold 4 · VM ram ~4 · VM WD **5** · VM NAS **4** · iMac lokální 1 · iMac NAS 2 · Synology Drive 1 měsíc/10 verzí/100 MB · IMS pull 1 · dump 2kdent **3** · CPU/RAM logy 90 dní · GitHub plná historie.
+**Dokumentovaná retence (lokální/on-site):** VM cold 4 (Thunderbolt) · VM ram **2** (poslední denní + noční) · VM WD **cold 3 + ram 1** · VM NAS **cold 3 + ram 1** (ram jen čtvrtek) · host TM (My Book) kvóta 3 TB/hodinově · iMac lokální 1 · iMac NAS 2 · Synology Drive 1 měsíc/10 verzí/100 MB · IMS pull 1 · dump 2kdent **3** · CPU/RAM logy 90 dní · GitHub plná historie.
 
 **HyperBackup → C2 (off-site) — max verzí a typ rotace dle úlohy** (ověřeno na NASu 1.9.2026, `/usr/syno/etc/synobackup.conf`; rotace zapnutá u všech):
 

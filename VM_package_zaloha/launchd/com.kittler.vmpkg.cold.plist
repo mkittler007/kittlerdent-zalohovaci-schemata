@@ -9,11 +9,11 @@
     <string>/Users/martinkittler/VM_Safety/bin/zaloha_vm_package.sh</string>
     <string>cold</string>
   </array>
-  <!-- DO PONDĚLÍ (interní disk, malá kapacita): 2× denně 06:00 + 18:00, retence 1.
-       OD PONDĚLÍ (Thunderbolt): přidej zpět 13:00 → 3× denně a v config.sh RETAIN_COLD=4. -->
+  <!-- Thunderbolt: cold 3× denně 06:00 / 13:00 / 18:00, retence 4 (config.sh RETAIN_COLD). -->
   <key>StartCalendarInterval</key>
   <array>
     <dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>0</integer></dict>
+    <dict><key>Hour</key><integer>13</integer><key>Minute</key><integer>0</integer></dict>
     <dict><key>Hour</key><integer>18</integer><key>Minute</key><integer>0</integer></dict>
   </array>
   <key>StandardOutPath</key><string>/Users/martinkittler/VM_Safety/agent.log</string>
