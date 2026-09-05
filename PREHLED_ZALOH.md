@@ -28,6 +28,7 @@
 | 14 | **Time Machine** (iMacy ordinace) | zelený/žlutý iMac | USB `WD Backup 8` (+ `TM_iMac_zluty`) sparsebundly | průběžně (macOS TM) | dle místa na disku | nativní TM restore; viz [[project_tm_zaloha_ordinace_usb]] |
 | 15 | **CPU/RAM monitoring logy** (ne data, ale s retencí) | host + VM | lokálně + Synology **.120** `/volume1/Mac_mini_Pro_Logy/` | sběr á 60 s; sync 04:20/04:40 | 90 dní | n/a (jen logy) |
 | 16 | **GitHub — infra/kód** | `Zalohovací schemata/` mirror + repa `kittlerdent-*` | GitHub (privátní, účet mkittler007) | při každé změně (autopush z VM) | plná git historie | `git clone` (push jen z VM .82, klíč `github_implantaty`) |
+| 17 | **Time Machine hostu (Mac mini Pro)** | host .24 (VM vyloučená) | USB `My Book` (disk7s2, sdílí kontejner 6 TB s `VM_WD`) | **hodinově** (macOS auto) | **kvóta 3 TB** (`tmutil setquota`), pak FIFO rotace; zbytek ~3 TB kontejneru pro VM_WD | nativní TM restore; rotaci hlídá `com.kittler.tm-wd-rotation` (napíše, od kdy se maže) |
 
 **Šifrované secrety** (mimo GitHub, jen v tomto hubu = NAS+cloud): `SECRETS_zalohovaci_schemata.tar.gz.enc` (AES-256, heslo ve správci hesel) — obsahuje `.dss`, HyperBackup C2 credentials, Synology Drive conf, `.telegram.env`. Rozbalení viz `DR_restore_playbook.md`.
 
