@@ -6,10 +6,12 @@
 #
 #  Cíl:      /volume1/VM Imac_zelený/  na NAS .120
 #  Struktura:
-#     Imac_zeleny_cold_VM_<YYYY-MM-DD>.pvm   ... denní verze (retence 10 dní)
-#     offsite_current/Imac_zeleny_cold_VM.pvm ... hardlink na nejnovější den
-#                                                 = ZDROJ pro HyperBackup -> C2
+#     daily/Imac_zeleny_cold_VM_<YYYY-MM-DD>.pvm ... denní verze (retence 10 dní)
+#     offsite_current/Imac_zeleny_cold_VM.pvm    ... hardlink na nejnovější den
+#                                                 = JEDINÝ ZDROJ pro HyperBackup -> C2
 #                                                 (C2 drží 2 verze = poslední 2 cold)
+#  POZOR: denní verze jsou v podsložce daily/, aby šly z C2 vyloučit jednou stálou
+#         cestou /VM Imac_zelený/daily/ (do C2 tak jde jen offsite_current). 5.9.2026.
 #  Retence:  10 denních verzí na NASu (hardlink dedup mezi dny -> reálně málo místa).
 #  Kdy:      1x denně (LaunchAgent). Ruční běh: --now (bez efektu, běží vždy).
 #
@@ -32,10 +34,12 @@ LOCK="$DROOT/.nas.lock"
 NAS="admin@192.168.100.120"
 NKEY="$HOME/.ssh/synology_backup"
 RBASE="/volume1/VM Imac_zelený"
+DAILY="daily"                          # podsložka s denními verzemi (C2 ji vylučuje jednou cestou)
 RETENTION=10
 DATE=$(date +%F)                       # YYYY-MM-DD (lexikální řazení = chronologické)
-DEST="Imac_zeleny_cold_VM_${DATE}.pvm" # dnešní denní verze
-CURR_DIR="offsite_current"             # stálý název pro HyperBackup->C2
+DEST_NAME="Imac_zeleny_cold_VM_${DATE}.pvm"  # název dnešní denní verze
+DEST="$DAILY/$DEST_NAME"               # relativní cesta pod RBASE (daily/…)
+CURR_DIR="offsite_current"             # stálý název pro HyperBackup->C2 (jen tohle jde do C2)
 CURR_NAME="Imac_zeleny_cold_VM.pvm"
 SSH_NAS=(ssh -i "$NKEY" -o BatchMode=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o ConnectTimeout=15)
 MAX_RETRY=3
@@ -66,8 +70,9 @@ START=$(date +%s)
 log "seeduji $DEST z nejnovější denní verze (hardlinky)"
 run_nas "
   cd \"$RBASE\" || exit 1
+  mkdir -p \"$DAILY\"
   if [ ! -d \"$DEST\" ]; then
-    LATEST=\$(ls -d Imac_zeleny_cold_VM_*.pvm 2>/dev/null | sort | tail -1)
+    LATEST=\$(ls -d \"$DAILY\"/Imac_zeleny_cold_VM_*.pvm 2>/dev/null | sort | tail -1)
     if [ -n \"\$LATEST\" ] && [ \"\$LATEST\" != \"$DEST\" ]; then cp -al \"\$LATEST\" \"$DEST\"; fi
   fi
   mkdir -p \"$DEST\"
@@ -102,7 +107,7 @@ run_nas "
 # --- 4) retence: nech nejnovějších $RETENTION denních verzí, starší smaž ---
 log "retence: nechávám posledních $RETENTION denních verzí"
 run_nas "
-  cd \"$RBASE\" || exit 1
+  cd \"$RBASE/$DAILY\" || exit 1
   ls -d Imac_zeleny_cold_VM_*.pvm 2>/dev/null | sort | head -n -$RETENTION | while read d; do
     [ -n \"\$d\" ] && rm -rf \"\$d\" && echo \"smazáno staré: \$d\"
   done
@@ -111,7 +116,7 @@ run_nas "
 END=$(date +%s); DUR=$((END-START))
 INFO=$(run_nas "
   cd \"$RBASE\" 2>/dev/null || exit 0
-  echo verzí=\$(ls -d Imac_zeleny_cold_VM_*.pvm 2>/dev/null | wc -l | tr -d ' ');
+  echo verzí=\$(ls -d \"$DAILY\"/Imac_zeleny_cold_VM_*.pvm 2>/dev/null | wc -l | tr -d ' ');
   echo dnes=\$(du -sh \"$DEST\" 2>/dev/null | awk '{print \$1}');
   echo celkem=\$(du -sh . 2>/dev/null | awk '{print \$1}');
   echo free=\$(df -h /volume1 | awk 'NR==2{print \$4}')
