@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.kittler.tm-syno-weekly</string>
+  <!-- Týdenní TM hostu na Synology "VM macOS M4" (ID 4BC1116C). Neděle 14:00 (po VM feederu). -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/tmutil</string><string>startbackup</string>
+    <string>--destination</string><string>4BC1116C-66F5-4A70-A9A6-DD74D7764AB9</string>
+    <string>--block</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Weekday</key><integer>0</integer><key>Hour</key><integer>14</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>/private/tmp/tm_syno_weekly.out</string>
+  <key>StandardErrorPath</key><string>/private/tmp/tm_syno_weekly.err</string>
+</dict>
+</plist>

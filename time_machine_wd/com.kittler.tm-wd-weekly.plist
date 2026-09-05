@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.kittler.tm-wd-weekly</string>
+  <!-- Týdenní TM hostu na WD "My Book" (ID CBCBA507). Neděle 03:00. -->
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/bin/tmutil</string><string>startbackup</string>
+    <string>--destination</string><string>CBCBA507-5AD3-4913-BA19-F93B2858E185</string>
+    <string>--block</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict><key>Weekday</key><integer>0</integer><key>Hour</key><integer>3</integer><key>Minute</key><integer>0</integer></dict>
+  <key>StandardOutPath</key><string>/private/tmp/tm_wd_weekly.out</string>
+  <key>StandardErrorPath</key><string>/private/tmp/tm_wd_weekly.err</string>
+</dict>
+</plist>
