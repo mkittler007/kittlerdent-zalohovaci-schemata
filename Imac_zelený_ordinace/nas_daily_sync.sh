@@ -7,11 +7,8 @@
 #  Cíl:      /volume1/VM Imac_zelený/  na NAS .120
 #  Struktura:
 #     daily/Imac_zeleny_cold_VM_<YYYY-MM-DD>.pvm ... denní verze (retence 10 dní)
-#     offsite_current/Imac_zeleny_cold_VM.pvm    ... hardlink na nejnovější den
-#                                                 = JEDINÝ ZDROJ pro HyperBackup -> C2
-#                                                 (C2 drží 2 verze = poslední 2 cold)
-#  POZOR: denní verze jsou v podsložce daily/, aby šly z C2 vyloučit jednou stálou
-#         cestou /VM Imac_zelený/daily/ (do C2 tak jde jen offsite_current). 5.9.2026.
+#  Do Synology C2 (HyperBackup task_65) jde JEN podsložka daily/ (verze s historií);
+#  ostatní (starý ruční balík Windows 11_zelený_01_09_26.pvm) je z C2 vyloučeno. 5.9.2026.
 #  Retence:  10 denních verzí na NASu (hardlink dedup mezi dny -> reálně málo místa).
 #  Kdy:      1x denně (LaunchAgent). Ruční běh: --now (bez efektu, běží vždy).
 #
@@ -39,8 +36,6 @@ RETENTION=10
 DATE=$(date +%F)                       # YYYY-MM-DD (lexikální řazení = chronologické)
 DEST_NAME="Imac_zeleny_cold_VM_${DATE}.pvm"  # název dnešní denní verze
 DEST="$DAILY/$DEST_NAME"               # relativní cesta pod RBASE (daily/…)
-CURR_DIR="offsite_current"             # stálý název pro HyperBackup->C2 (jen tohle jde do C2)
-CURR_NAME="Imac_zeleny_cold_VM.pvm"
 SSH_NAS=(ssh -i "$NKEY" -o BatchMode=yes -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=5 -o ConnectTimeout=15)
 MAX_RETRY=3
 
@@ -95,16 +90,7 @@ if [ "$RC" != "0" ]; then
   echo "FAIL rsync rc=$RC $(date '+%F %T')" >"$STATUS"; exit 1
 fi
 
-# --- 3) offsite_current = hardlink na dnešní verzi (zdroj pro HyperBackup->C2) ---
-log "aktualizuji $CURR_DIR/$CURR_NAME (hardlink na $DEST)"
-run_nas "
-  cd \"$RBASE\" || exit 1
-  rm -rf \"$CURR_DIR\"
-  mkdir -p \"$CURR_DIR\"
-  cp -al \"$DEST\" \"$CURR_DIR/$CURR_NAME\"
-" 2>>"$LOG"
-
-# --- 4) retence: nech nejnovějších $RETENTION denních verzí, starší smaž ---
+# --- 3) retence: nech nejnovějších $RETENTION denních verzí, starší smaž ---
 log "retence: nechávám posledních $RETENTION denních verzí"
 run_nas "
   cd \"$RBASE/$DAILY\" || exit 1
