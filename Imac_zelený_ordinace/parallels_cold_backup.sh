@@ -25,7 +25,8 @@ SRC="$("$PRL" list -i "$UUID" 2>/dev/null | awk -F': ' '/^Home:/{print $2}' | se
 [ -n "$SRC" ] || SRC="$HOME/Parallels/Windows 11.pvm"
 DROOT="$HOME/Parallels_Backup_ordinace"
 DEST="$DROOT/backup"
-BUNDLE="$(basename "$SRC")"
+# Cíl zálohy má PEVNÝ, srozumitelný název (odlišit od živé VM, ať se v tom vyznáme).
+BUNDLE="Imac_zeleny_cold_VM.pvm"
 STAGE="$DEST/.staging.pvm"
 OLD="$DEST/.old.pvm"
 LOG="$DROOT/backup.log"
