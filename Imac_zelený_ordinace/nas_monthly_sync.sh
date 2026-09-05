@@ -15,7 +15,10 @@
 # =============================================================================
 set -uo pipefail
 
-BNAME="Windows 11_Imac_zelený 2.pvm"
+# Název .pvm balíku odvozujeme z lokální cold zálohy (tam je vždy jediný .pvm) — rename-proof.
+DROOT_TMP="$HOME/Parallels_Backup_ordinace"
+BNAME="$(cd "$DROOT_TMP/backup" 2>/dev/null && ls -d *.pvm 2>/dev/null | head -1)"
+[ -n "$BNAME" ] || BNAME="Windows 11.pvm"
 SRC="$HOME/Parallels_Backup_ordinace/backup/$BNAME"
 DROOT="$HOME/Parallels_Backup_ordinace"
 LOG="$DROOT/nas_sync.log"

@@ -19,16 +19,19 @@ set -uo pipefail
 
 PRL=/usr/local/bin/prlctl
 UUID="{5ed2e4d7-210a-4f9c-b955-274bad61ee9f}"
-SRC="$HOME/Parallels/Windows 11_Imac_zelený 2.pvm"
+# Cestu k .pvm odvozujeme dynamicky z prlctl podle UUID (rename-proof).
+# Fallback na starý pevný název, kdyby prlctl selhal.
+SRC="$("$PRL" list -i "$UUID" 2>/dev/null | awk -F': ' '/^Home:/{print $2}' | sed 's:/*$::')"
+[ -n "$SRC" ] || SRC="$HOME/Parallels/Windows 11.pvm"
 DROOT="$HOME/Parallels_Backup_ordinace"
 DEST="$DROOT/backup"
-BUNDLE="Windows 11_Imac_zelený 2.pvm"
+BUNDLE="$(basename "$SRC")"
 STAGE="$DEST/.staging.pvm"
 OLD="$DEST/.old.pvm"
 LOG="$DROOT/backup.log"
 STATUS="$DROOT/STATUS.txt"
 LOCK="$DROOT/.lock"
-MIN_FREE_GB=20          # bezpečnostní rezerva volného místa
+MIN_FREE_GB="${MIN_FREE_GB:-20}"   # bezpečnostní rezerva volného místa (přepíš env proměnnou pro jednorázový běh)
 
 mkdir -p "$DEST"
 log(){ printf '%s  %s\n' "$(date '+%F %T')" "$*" | tee -a "$LOG"; }
