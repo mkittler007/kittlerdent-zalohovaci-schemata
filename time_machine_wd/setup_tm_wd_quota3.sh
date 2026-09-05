@@ -8,8 +8,10 @@ DEST_ID="CBCBA507-5AD3-4913-BA19-F93B2858E185"   # My Book (z tmutil destination
 echo "[1/2] Nastavuji kvótu Time Machine na 3 TB (3000 GB)..."
 tmutil setquota "$DEST_ID" 3000
 
-echo "[2/2] Zajišťuji hodinové automatické zálohy (zapnuto)..."
-tmutil enableautobackup
+echo "[2/2] Kontrola hodinových automatických záloh (výchozí macOS, má být 1)..."
+# Pozn.: verb 'enableautobackup' na novějším macOS neexistuje; auto se řídí klíčem
+# AutoBackup v /Library/Preferences/com.apple.TimeMachine (1 = hodinově zapnuto).
+# Případné vypnutí: 'sudo tmutil disableautobackup'; zapnutí zpět přes GUI Nastavení > TM.
 
 echo "HOTOVO. Kontrola:"
 tmutil destinationinfo | grep -iE "Name|Quota"
