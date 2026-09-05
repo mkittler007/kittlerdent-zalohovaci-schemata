@@ -3,19 +3,17 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.kittler.parallels-nas-monthly</string>
+    <string>com.kittler.parallels-nas-daily</string>
 
     <key>ProgramArguments</key>
     <array>
         <string>/bin/bash</string>
-        <string>/Users/martinkittler/Parallels_Backup_ordinace/nas_monthly_sync.sh</string>
+        <string>/Users/martinkittler/Parallels_Backup_ordinace/nas_daily_sync.sh</string>
     </array>
 
-    <!-- Každou neděli 13:00; skript se provede jen 1. neděli v měsíci (den <=7). -->
-    <!-- 13:00 = po polední lokální cold záloze (12:00), zdroj je čerstvý. -->
+    <!-- Denně 13:00 = po polední lokální cold záloze (12:00), zdroj je čerstvý. -->
     <key>StartCalendarInterval</key>
     <dict>
-        <key>Weekday</key><integer>0</integer>
         <key>Hour</key><integer>13</integer>
         <key>Minute</key><integer>0</integer>
     </dict>
