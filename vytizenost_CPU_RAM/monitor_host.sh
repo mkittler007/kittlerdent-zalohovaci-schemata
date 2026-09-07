@@ -37,16 +37,24 @@ vm_rss_mb=$(ps -axo rss,comm | awk '/prl_macvm_app/{s+=$1} END{printf "%.0f", s/
 [ -f "$LOG" ] || echo "ts,phase,total_mb,free_mb,active_mb,used_mb,wired_mb,compressed_mb,free_pct,swap_used_mb,pressure,load1,vm_proc_rss_mb" > "$LOG"
 echo "$ts,$phase,$total_mb,$free_mb,$active_mb,$used_mb,$wired_mb,$comp_mb,$free_pct,$swap_used,$pressure,$load1,$vm_rss_mb" >> "$LOG"
 
-# ── zachyt viníky při špičce (pro týdenní report) ──
+# ── zachyt viníky při REÁLNÉM přetížení (pro týdenní report) ──
+# Pozor: na Apple Siliconu je swap oportunistický (medián ~4.5 GB i při volné RAM) a
+# memory_pressure "warn" (pressure=2) je běžný provozní stav běžící VM — ANI JEDNO není
+# přetížení (dříve swap>100M falešně označoval ~92 % vzorků). Za přetížení bereme jen
+# skutečnou tíseň: kriticky málo volné paměti, critical pressure, nebo load1 > počet jader.
+ncpu=$(sysctl -n hw.logicalcpu 2>/dev/null); ncpu=${ncpu:-10}
 reasons=""
-[ -n "$free_pct" ] && [ "$free_pct" -lt 25 ] 2>/dev/null && reasons="free${free_pct}%"
-[ -n "$pressure" ] && [ "$pressure" -gt 1 ] 2>/dev/null && reasons="$reasons pressure$pressure"
-sw=${swap_used%.*}; [ "${sw:-0}" -gt 100 ] 2>/dev/null && reasons="$reasons swap${sw}M"
+[ -n "$free_pct" ] && [ "$free_pct" -lt 20 ] 2>/dev/null && reasons="free${free_pct}%"
+[ -n "$pressure" ] && [ "$pressure" -ge 4 ] 2>/dev/null && reasons="$reasons pressure$pressure"
+awk -v l="${load1:-0}" -v c="$ncpu" 'BEGIN{exit !(l>c)}' && reasons="$reasons load${load1}>${ncpu}c"
+reasons=$(echo "$reasons" | sed 's/^ *//')
 if [ -n "$reasons" ]; then
   PLOG="$BASE/peaks_host_${DAY}.log"
-  tm=$(ps -axo rss,comm -m 2>/dev/null | awk 'NR>1&&NR<=6{n=$2;sub(/.*\//,"",n);printf "%s(%dMB) ",n,$1/1024}')
+  # RSS vč. mapované/sdílené paměti (orientační). Procesy s RSS > fyzické RAM jsou
+  # mmap-artefakt (VM framework mapuje guest RAM jako RSS) → vynecháme, jinak zkreslí žebříček.
+  tm=$(ps -axo rss,comm -m 2>/dev/null | awk -v tot="$total_mb" 'NR>1{mb=$1/1024; if(mb<=tot){n=$2;sub(/.*\//,"",n);printf "%s(%dMB) ",n,mb; if(++k>=5)exit}}')
   tc=$(ps -axo %cpu,comm -r 2>/dev/null | awk 'NR>1&&NR<=6{n=$2;sub(/.*\//,"",n);printf "%s(%.0f%%) ",n,$1}')
-  echo "$ts|$reasons|free=${free_pct}% used=${used_mb}MB|MEM: $tm|CPU: $tc" >> "$PLOG"
+  echo "$ts|$reasons|free=${free_pct}% used=${used_mb}MB swap=${swap_used}M|MEM: $tm|CPU: $tc" >> "$PLOG"
 fi
 
 # retence 90 dní

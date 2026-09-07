@@ -35,17 +35,22 @@ load1=$(sysctl -n vm.loadavg | awk '{print $2}')
 [ -f "$LOG" ] || echo "ts,phase,total_mb,free_mb,active_mb,inactive_mb,speculative_mb,wired_mb,compressed_mb,used_mb,swap_used_mb,pressure,load1" > "$LOG"
 echo "$ts,$phase,$total_mb,$free_mb,$active_mb,$inactive_mb,$spec_mb,$wired_mb,$comp_mb,$used_mb,$swap_used,$pressure,$load1" >> "$LOG"
 
-# ── zachyt viníky při špičce (pro týdenní report) ──
+# ── zachyt viníky při REÁLNÉM přetížení (pro týdenní report) ──
+# Stejně jako u hostu: swap>100M ani pressure "warn" (=2) NENÍ přetížení. Za tíseň bereme
+# kriticky plnou RAM (>=90 % přidělené), critical pressure (=4), nebo load1 > počet jader.
+ncpu=$(sysctl -n hw.logicalcpu 2>/dev/null); ncpu=${ncpu:-8}
 upct=0; [ "$total_mb" -gt 0 ] && upct=$((used_mb * 100 / total_mb))
 reasons=""
-[ "$upct" -ge 75 ] && reasons="RAM${upct}%"
-[ -n "$pressure" ] && [ "$pressure" -gt 1 ] 2>/dev/null && reasons="$reasons pressure$pressure"
-sw=${swap_used%.*}; [ "${sw:-0}" -gt 100 ] 2>/dev/null && reasons="$reasons swap${sw}M"
+[ "$upct" -ge 90 ] && reasons="RAM${upct}%"
+[ -n "$pressure" ] && [ "$pressure" -ge 4 ] 2>/dev/null && reasons="$reasons pressure$pressure"
+awk -v l="${load1:-0}" -v c="$ncpu" 'BEGIN{exit !(l>c)}' && reasons="$reasons load${load1}>${ncpu}c"
+reasons=$(echo "$reasons" | sed 's/^ *//')
 if [ -n "$reasons" ]; then
   PLOG="$BASE/peaks_vm_${DAY}.log"
-  tm=$(ps -axo rss,comm -m 2>/dev/null | awk 'NR>1&&NR<=6{n=$2;sub(/.*\//,"",n);printf "%s(%dMB) ",n,$1/1024}')
+  # RSS vč. mapované/sdílené paměti (orientační); procesy nad fyzickou RAM vynecháme.
+  tm=$(ps -axo rss,comm -m 2>/dev/null | awk -v tot="$total_mb" 'NR>1{mb=$1/1024; if(mb<=tot){n=$2;sub(/.*\//,"",n);printf "%s(%dMB) ",n,mb; if(++k>=5)exit}}')
   tc=$(ps -axo %cpu,comm -r 2>/dev/null | awk 'NR>1&&NR<=6{n=$2;sub(/.*\//,"",n);printf "%s(%.0f%%) ",n,$1}')
-  echo "$ts|$reasons|used=${used_mb}MB free=${free_mb}MB|MEM: $tm|CPU: $tc" >> "$PLOG"
+  echo "$ts|$reasons|used=${used_mb}MB free=${free_mb}MB swap=${swap_used}M|MEM: $tm|CPU: $tc" >> "$PLOG"
 fi
 
 # retence 90 dní

@@ -99,13 +99,16 @@ def machine_block(name, csv_rows, used_key, peak_pattern, total_from):
             L.append(f"  Volná paměť: min={min(fp):.0f}%  medián={pctl(fp,50):.0f}%")
     npeak, mem, cpu = parse_peaks(peak_pattern, DAYS)
     mins = npeak  # 1 vzorek = 1 min (interval 60 s)
-    L.append(f"  Špičky: {npeak} vzorků ≈ {mins} min v přetížení za týden")
+    if npeak:
+        L.append(f"  Přetížení (reálná tíseň): {npeak} vzorků ≈ {mins} min za {DAYS} dní")
+    else:
+        L.append(f"  Přetížení (reálná tíseň): 0 min za {DAYS} dní — bez tísně")
     if mem:
         top = sorted(mem.items(), key=lambda x: -x[1])[:6]
-        L.append("  Nejvíc RAM při špičce: " + ", ".join(f"{k} {v:.0f}MB" for k,v in top))
+        L.append("  Nejvíc RAM při přetížení (RSS vč. mapované): " + ", ".join(f"{k} {v:.0f}MB" for k,v in top))
     if cpu:
         top = sorted(cpu.items(), key=lambda x: -x[1])[:6]
-        L.append("  Nejvíc CPU při špičce: " + ", ".join(f"{k} {v:.0f}%" for k,v in top))
+        L.append("  Nejvíc CPU při přetížení: " + ", ".join(f"{k} {v:.0f}%" for k,v in top))
     # doporučení RAM (jen pro VM, kde total odpovídá přidělené paměti)
     if name.startswith("VM"):
         rec = max(16, gb(p99)*1.25); rec = int(-(-rec//4))*4
