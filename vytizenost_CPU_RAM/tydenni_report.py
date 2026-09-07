@@ -131,11 +131,13 @@ def main():
     text = "\n".join(body)
     print(text)
     if os.path.exists(NOTIFY):
-        subprocess.run([sys.executable, NOTIFY, "--email-to", EMAIL_TO,
+        # --to martin = telegram-first s plným fallbackem (Telegram→e-mail→iMessage),
+        # pingne telefon; dřívější --email-to obcházelo routing (jen e-mail, bez pojistky).
+        subprocess.run([sys.executable, NOTIFY, "--to", "martin",
                         "--subject", "Vytíženost RAM/CPU — týdenní report (host + VM)",
                         "--body", text, "--key", "moncpuram_weekly"], check=False)
     else:
-        print("POZOR: notify.py nenalezen, e-mail neodeslán.", file=sys.stderr)
+        print("POZOR: notify.py nenalezen, report neodeslán.", file=sys.stderr)
 
 if __name__ == "__main__":
     main()
