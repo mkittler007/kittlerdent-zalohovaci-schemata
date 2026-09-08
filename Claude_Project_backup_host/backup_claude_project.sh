@@ -7,7 +7,12 @@
 # iCloud materializacím / chvilkovým výpadkům. Kód 0 i 23 (částečně) = OK.
 export PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
 
-RSYNC=/opt/homebrew/bin/rsync            # GNU rsync 3.4.4 (NE Apple openrsync 2.6.9)
+# POZOR: macOS 26 Local Network Privacy blokuje Homebrew rsync (third-party binárka) přístup
+# na LAN, když běží z launchd (headless, bez GUI promptu) → connect() vrací EHOSTUNREACH
+# ("No route to host"). Apple podepsaný /usr/bin/rsync (openrsync protocol 29 na macOS 26 =
+# plná podpora -rlt/--stats/--size-only/--partial/--timeout/--exclude, ověřeno real-run) je
+# LNP-povolený. Proto ZDE (launchd) NE Homebrew rsync. Historie 4.9.2026.
+RSYNC=/usr/bin/rsync                      # Apple openrsync (LNP-safe pod launchd); Homebrew rsync padá EHOSTUNREACH
 SYNOLOGY_HOST="192.168.100.120"
 SYNOLOGY_USER="admin"
 SYNOLOGY_KEY="$HOME/.ssh/synology_backup"
@@ -25,6 +30,22 @@ fi
 
 log "=== START backup_claude_project (host) ==="
 log "rsync SSH: $SOURCE -> $SYNOLOGY_USER@$SYNOLOGY_HOST:$SYNOLOGY_DEST"
+
+# --- Materializace iCloud "dataless" souborů (fix 8.9.2026) ---
+# iCloud "Optimalizace úložiště" evictuje soubory na dataless (moderní macOS BEZ .icloud
+# přípony, proto je exclude nezachytí). Apple openrsync na dataless souboru přes mmap
+# deadlockne ("mmap: Resource deadlock avoided", EDEADLK) a shodí CELÝ běh (kód 10).
+# Před rsyncem je proto stáhneme čtením (cat = blokující, spolehlivé). Detekce find -flags
+# +dataless. Historie: 2 selhání za sebou kvůli 95 dataless dokladům v Účetnictví/07_2026.
+log "Kontrola dataless iCloud souborů..."
+DATALESS_N=$(find "$SOURCE" -flags +dataless -type f 2>/dev/null | wc -l | tr -d " ")
+if [ "$DATALESS_N" -gt 0 ]; then
+    log "  nalezeno $DATALESS_N dataless souborů, materializuji ctenim..."
+    find "$SOURCE" -flags +dataless -type f -print0 2>/dev/null | while IFS= read -r -d "" f; do cat "$f" >/dev/null 2>&1; done
+    REMAIN=$(find "$SOURCE" -flags +dataless -type f 2>/dev/null | wc -l | tr -d " ")
+    log "  materializace hotová (zbývá dataless: $REMAIN)"
+fi
+# --- konec materializace ---
 
 ATTEMPTS=3
 RC=1
