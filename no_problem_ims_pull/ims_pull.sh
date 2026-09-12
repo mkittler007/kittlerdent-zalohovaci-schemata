@@ -28,6 +28,10 @@ IMS_MAX_AGE_H=36       # lokální IMS kopie starší než tolik h = teprve pak 
 
 log(){ echo "$(date '+%F %T') $*" >> "$LOG"; }
 
+# čeká, až bude Synology .120 dosažitelná — ride-out krátkých výpadků trasy (No route to host)
+net_up(){ ping -c1 -t2 192.168.100.120 >/dev/null 2>&1; }
+wait_net(){ local i; for i in $(seq 1 20); do net_up && { [ "$i" -gt 1 ] && log "IMS: .120 opět dostupná (po $((i-1)) min)"; return 0; }; log "IMS: .120 nedostupná, čekám 60s (pokus $i/20)…"; sleep 60; done; net_up; }
+
 # --- Telegram (stejně jako ostatní watchdogy: .env + curl) ---
 TG_TOKEN=""; TG_CHAT=""
 for e in "$HOME/.vm-backup-telegram.env" "$HOME/.claude/channels/telegram/.env" \
@@ -65,6 +69,7 @@ ALARM=""
 # ============================================================================
 ims_ok=1
 newest_src=""
+wait_net || log "IMS: .120 nedostupná i po ~20 min — zkusím přesto"
 get_newest(){ newest_src=$(ssh $SSH_OPTS "$SYNO" "ls '$SRC_DIR' 2>/dev/null | grep _05-00-01 | sort | tail -1"); }
 get_newest
 for d in 20 60; do
