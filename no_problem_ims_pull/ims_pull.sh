@@ -28,8 +28,8 @@ IMS_MAX_AGE_H=36       # lokální IMS kopie starší než tolik h = teprve pak 
 
 log(){ echo "$(date '+%F %T') $*" >> "$LOG"; }
 
-# čeká, až bude Synology .120 dosažitelná — ride-out krátkých výpadků trasy (No route to host)
-net_up(){ ping -c1 -t2 192.168.100.120 >/dev/null 2>&1; }
+# čeká, až bude Synology .120 dosažitelná PŘES SSH — ride-out flapu (ICMP ping projde, ale TCP/22 dá „No route to host" → sonda musí být SSH, ne ping)
+net_up(){ ssh $SSH_OPTS "$SYNO" true >/dev/null 2>&1; }
 wait_net(){ local i; for i in $(seq 1 20); do net_up && { [ "$i" -gt 1 ] && log "IMS: .120 opět dostupná (po $((i-1)) min)"; return 0; }; log "IMS: .120 nedostupná, čekám 60s (pokus $i/20)…"; sleep 60; done; net_up; }
 
 # --- Telegram (stejně jako ostatní watchdogy: .env + curl) ---
@@ -89,8 +89,11 @@ else
     pull_one(){ "$RSYNC" -t --rsync-path=/usr/bin/rsync -e "ssh $SSH_OPTS" \
         "$SYNO:$SRC_DIR/$newest_src" "$DST/" 2>>"$LOG"; }
     pulled=0
-    for d in 0 20 60; do
-      [ "$d" -gt 0 ] && { log "IMS: rsync selhal, retry za ${d}s…"; sleep "$d"; }
+    for attempt in 1 2 3 4 5 6; do
+      if [ "$attempt" -gt 1 ]; then
+        log "IMS: rsync selhal, čekám 40s + ověřím SSH k .120 (pokus $attempt/6)…"; sleep 40
+        net_up || log "IMS: SSH k .120 stále nedostupné, zkusím přesto"
+      fi
       pull_one && { pulled=1; break; }
     done
     if [ "$pulled" != "1" ]; then
@@ -98,9 +101,9 @@ else
         loc=$(ls "$DST" 2>/dev/null | grep _05-00-01 | sort | tail -1)
         if [ -n "$loc" ]; then la_h=$(( ( $(date +%s) - $(stat -f %m "$DST/$loc") ) / 3600 )); else la_h=9999; fi
         if [ "$la_h" -le "$IMS_MAX_AGE_H" ]; then
-          log "IMS: rsync 3× selhal (síť k .120), ale lokální kopie čerstvá (${la_h} h ≤ ${IMS_MAX_AGE_H}) — bez alarmu"
+          log "IMS: rsync opakovaně selhal (6× / ~4 min, síť k .120), ale lokální kopie čerstvá (${la_h} h ≤ ${IMS_MAX_AGE_H}) — bez alarmu"
         else
-          ims_ok=0; ALARM+="• IMS: rsync 3× selhal a lokální kopie stará ${la_h} h (limit ${IMS_MAX_AGE_H} h). "
+          ims_ok=0; ALARM+="• IMS: rsync opakovaně selhal (6× / ~4 min) a lokální kopie stará ${la_h} h (limit ${IMS_MAX_AGE_H} h). "
         fi
     fi
     [ -f "$DST/$newest_src" ] && log "IMS: staženo $newest_src"
