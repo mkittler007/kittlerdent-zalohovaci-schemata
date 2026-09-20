@@ -60,6 +60,30 @@ strike(){
   log "$name: strike $n (tichý, zkusím znovu příští běh)"; return 0
 }
 
+# ============================================================================
+# CATCHUP REŽIM (přidáno 2026-09-20): tichý doháněč pro flap .120 libovolné délky.
+# Volá se jako `ims_pull.sh catchup` z LaunchAgentu com.kittler.ims_pull_catchup
+# á 30 min. NIKDY nealarmuje, NIKDY nezvyšuje strike — jen když dnešní snímek
+# NENÍ lokálně a .120 je přes SSH dosažitelná, tiše ho stáhne a resetuje strike.
+# Uzavírá díru mezi 4 plánovanými běhy: scheduled běhy dělají 2-strike alarm,
+# catchup přečkává výpadek. (Recidiva flapu, viz [[project_ims_pull]] 20.9.2026.)
+# ============================================================================
+if [ "${1:-full}" = "catchup" ]; then
+  net_up || exit 0                                  # flap → tiše skonči, zkusí příští tick
+  cnewest=$(ssh $SSH_OPTS "$SYNO" "ls '$SRC_DIR' 2>/dev/null | grep _05-00-01 | sort | tail -1")
+  [ -n "$cnewest" ] || exit 0                       # zdroj prázdný/nedostupný → tiše skonči
+  [ -f "$DST/$cnewest" ] && exit 0                  # už mám → tiše skonči (žádný log spam)
+  mkdir -p "$DST"
+  if "$RSYNC" -t --rsync-path=/usr/bin/rsync -e "ssh $SSH_OPTS" "$SYNO:$SRC_DIR/$cnewest" "$DST/" 2>>"$LOG"; then
+    log "IMS[catchup]: doháněč stáhl $cnewest"
+    ls "$DST" 2>/dev/null | grep _05-00-01 | grep -v -x "$cnewest" | while IFS= read -r old; do
+      rm -f "$DST/$old" && log "IMS[catchup]: smazána stará verze $old"
+    done
+    echo 0 > "$STATE_DIR/ims_pull.ims.strike"        # dohnáno → sched. watchdog už neřve
+  fi
+  exit 0
+fi
+
 mkdir -p "$DST" "$STATE_DIR"
 log "=== běh start ==="
 ALARM=""
@@ -133,11 +157,11 @@ fi
 is_ok=1
 newest_is=$(find "$IS_DIR" -name 'is.2kdent*gz' -type f 2>/dev/null -exec stat -f '%m %N' {} \; | sort -nr | head -1)
 if [ -z "$newest_is" ]; then
-  is_ok=0; ALARM+="• IS: nenalezen žádný dump v $IS_DIR. "
+  is_ok=1  # zadny dump = OK: lokalni IS dump se uz netaha (migrace na zivy .151, 2026-09-16)
 else
   mt=${newest_is%% *}
   age_h=$(( ( $(date +%s) - mt ) / 3600 ))
-  if [ "$age_h" -gt "$IS_MAX_AGE_H" ]; then
+  if false; then  # IS dump-age alarm VYPNUT 2026-09-16 (migrace na zivy IS .151; dump se netaha)
     is_ok=0; ALARM+="• IS: nejnovější dump je starý ${age_h} h (limit ${IS_MAX_AGE_H} h). "
   else
     log "IS: OK, nejnovější dump starý ${age_h} h"
