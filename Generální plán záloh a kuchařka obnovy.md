@@ -90,8 +90,8 @@
 
 ## 7) Recepční Macy — iMac `.62`, iMac `.64` (sestry), MacBook recepce `.90`
 **Role:** recepce, IS aplikace, `recepce@kittlerdent.cz`.
-**Zálohuje se:** ⚠️ **NENÍ centrálně zálohováno.** Mail = IMAP cloud (mx.kittlerdent.cz) → pošta přežije, ale lokální nastavení/pravidla/cache ne.
-**Mezera k rozhodnutí:** přidat `.62/.64` do TM (WD nebo `.120`).
+**Zálohuje se:** **Time Machine → lokální Synology (ordinace)** — nativní TM, celý stroj (systém, lokální nastavení, mailová pravidla/cache). Mail navíc drží IMAP cloud (mx.kittlerdent.cz). ✅ **Pokryto** (potvrzeno MK 22.9.2026).
+**Off-site:** ne (TM je na on-site NAS; požár/krádež pokrývá jen to, co jde do C2).
 
 ## 8) Domácí Mac Mini OLD (`Tailscale 100.86.128.57`) + NEW (`100.113.103.26`)
 **Zálohuje se:** Time Machine → **domácí Synology Bedřichov** (`synoplay`, `100.124.205.123`) — OLD obden (>40 h), NEW týdně (>150 h); + iCloud drží online kopii. **Off-site vůči ordinaci:** ano (jsou doma/v Bedřichově).
@@ -111,7 +111,7 @@
 | **iMac zelený .170** | cold 1 | — | — | daily 10 | ✅ (#65) |
 | **iMac žlutý** | — | TM | — | — | ❌ |
 | **Synology .120** | RAID5 | — | — | — | ✅ vše (#39–65) |
-| **Recepční Macy .62/.64/.90** | — | — | — | — | ❌ (mezera) |
+| **Recepční Macy .62/.64/.90** | — | — | — | ✅ Time Machine | ❌ |
 | **Domácí Macy OLD/NEW** | — | — | — | Bedřichov TM | ❌ (doma) |
 
 ---
@@ -196,8 +196,7 @@
 - **E3** Btrfs snapshoty na `.120` VYPNUTÉ → žádná lokální ransomware/rollback vrstva.
 - **E4** WD Backup 8 (TM) hlásil 100 % inodů → hlídat, ať neodmítne zápis.
 - **E5** IS dump = bez binlogu → PITR jen do nejbližšího dumpu.
-- **E6** Recepční Macy `.62/.64/.90` bez centrální zálohy (jen IMAP cloud).
-- **E7** SynoVeeam `.104` nevyužitý; domácí video sync (USB→synoplay) nedokončený.
+- **E6** SynoVeeam `.104` nevyužitý; domácí video sync (USB→synoplay) nedokončený.
 
 ## Klíče a secrety (jen ukazatele, hodnoty NE)
 - `~/.ssh/synology_backup` (NAS), `~/.ssh/id_ed25519_macmini` (VM→host), `~/.ssh/github_implantaty` (push z VM).
