@@ -45,6 +45,7 @@ copy_type() {
 
 rc=0
 copy_type cold "$RETAIN_WD_COLD" || rc=1
-copy_type ram  "$RETAIN_WD_RAM"  || rc=1
-[ "$rc" -eq 0 ] && log "OK hotovo (WD cold=$RETAIN_WD_COLD, ram=$RETAIN_WD_RAM)."
+# VARIANTA 2 (22.9.2026): ram se na WD už NEkopíruje (ram jen na Thunderboltu).
+# copy_type ram  "$RETAIN_WD_RAM"  || rc=1
+[ "$rc" -eq 0 ] && log "OK hotovo (WD cold=$RETAIN_WD_COLD; ram vypnut – jen Thunderbolt)."
 exit $rc

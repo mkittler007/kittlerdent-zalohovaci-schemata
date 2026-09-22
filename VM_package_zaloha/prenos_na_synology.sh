@@ -48,9 +48,10 @@ send_type() {
 
 rc=0
 send_type cold "$RETAIN_SYNO_COLD" || rc=1            # cold KAŽDOU NOC
-if [ "$(date +%u)" -eq 4 ]; then                      # 4 = čtvrtek → i ram
-  send_type ram "$RETAIN_SYNO_RAM" || rc=1
-  log "Čtvrtek → přenesen i ram."
-fi
-[ "$rc" -eq 0 ] && log "OK hotovo (Synology cold=$RETAIN_SYNO_COLD, ram čtvrtek=$RETAIN_SYNO_RAM)."
+# VARIANTA 2 (22.9.2026): ram se na Synology už NEpřenáší (ram jen na Thunderboltu).
+# if [ "$(date +%u)" -eq 4 ]; then                      # 4 = čtvrtek → i ram
+#   send_type ram "$RETAIN_SYNO_RAM" || rc=1
+#   log "Čtvrtek → přenesen i ram."
+# fi
+[ "$rc" -eq 0 ] && log "OK hotovo (Synology cold=$RETAIN_SYNO_COLD; ram vypnut – jen Thunderbolt)."
 exit $rc

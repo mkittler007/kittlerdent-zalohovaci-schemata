@@ -70,6 +70,6 @@ WDVOL="$(dirname "$WD_BASE")"
 if [ ! -d "$WDVOL" ]; then
   log "WD ($WDVOL) nepřipojen — přeskočeno (bez poplachu)"; clr wd_fail; clr wd_retry; clr wd_alert
 else
-  check wd "$(age_local "$WD_BASE" 'macOS_ram_*.macvm')" 27 wd
+  check wd "$(age_local "$WD_BASE" 'macOS_cold_*.macvm')" 27 wd   # VARIANTA 2: WD má jen cold
 fi
 log "hlídač hotov."

@@ -1,8 +1,11 @@
 # Sdílená konfigurace VM package zálohy (BĚŽÍ NA HOSTU .24). Source všechny skripty.
 # Přepínač režimu interní↔Thunderbolt = JEDINÁ proměnná LOCAL_BASE + retence níže.
-UUID="{cf7a9c8f-39b4-4691-8c25-40ebae6a0768}"      # VM "macOS"
+# VARIANTA 2 (MK 22.9.2026): RAM balík žije JEN na Thunderboltu (rychlý rollback zdravé VM);
+#   WD i Synology dostávají POUZE COLD (spolehlivá obnova čistým bootem). Důvod: ram (suspend)
+#   ze zatuhlé VM je nespolehlivý resume-zdroj (viz zámrz 22.9.) → off-disk pojistka jen cold.
+UUID="{7c4a8e80-613c-4fa3-86a3-516b32b15508}"   # cutover 22.9.
 PRL="/Applications/Parallels Desktop.app/Contents/MacOS/prlctl"
-SRC="/Volumes/KD_Ext4T/macOS.macvm"
+SRC="/Volumes/KD_Ext4T/macOS.macvm"   # cutover 22.9.: zpět na kanonickou cestu
 
 # ── REŽIM ÚLOŽIŠTĚ LOKÁLNÍCH BALÍKŮ ─────────────────────────────────────────
 #LOCAL_BASE="/Users/martinkittler/VM_Safety/packages"    # interní (legacy)
@@ -17,18 +20,18 @@ RETAIN_RAM=2       # Thunderbolt ram: poslední noční (23:00) + poslední denn
 MIN_FREE_GB=40     # když volno < tohle, ořízne nejstarší cold balík dřív, než udělá nový
 
 # ── WD (USB) — 1× denně v noci (~23:10). Runner (bash) má Full Disk Access. ──
-# Kopíruje POSLEDNÍ COLD (drž 3 dny) + POSLEDNÍ RAM (drž 1). link-dest dedup proti stejnému typu.
+# VARIANTA 2: kopíruje POUZE POSLEDNÍ COLD (drž 3 dny). RAM se na WD už NEkopíruje (jen Thunderbolt).
 # POZOR: „My Book" je disk Time Machine → zápis zakázán i s FDA. Proto SAMOSTATNÁ APFS volume „VM_WD"
 # ve stejném kontejneru (NENÍ TM, sdílí místo s TM, zápis OK).
 WD_BASE="/Volumes/VM_WD/VM_packages"
 RETAIN_WD_COLD=3   # WD: poslední cold z Thunderu, drž 3 dny
-RETAIN_WD_RAM=1    # WD: 1 ram
+RETAIN_WD_RAM=0    # VARIANTA 2: WD ram vypnut (ram jen na Thunderboltu)
 
-# ── Synology (.120) — off-host. Cold KAŽDOU NOC (~23:50, drž 3), RAM jen ČTVRTEK (drž 1). ──
+# ── Synology (.120) — off-host. VARIANTA 2: POUZE COLD KAŽDOU NOC (~23:50, drž 3). Ram vypnut. ──
 SYNO_USER="admin"; SYNO_HOST="192.168.100.120"; SYNO_KEY="$HOME/.ssh/synology_backup"
 NAS_BASE="/volume1/VM macOS M4/VM_packages"
 RETAIN_SYNO_COLD=3 # Synology: intradenní cold nočně, drž 3 dny
-RETAIN_SYNO_RAM=1  # Synology: ram týdně (čtvrtek), drž 1
+RETAIN_SYNO_RAM=0  # VARIANTA 2: Synology ram vypnut (ram jen na Thunderboltu)
 
 LOG_DIR="/Users/martinkittler/VM_Safety"
 TG_ENV="$HOME/.vm-backup-telegram.env"
