@@ -99,6 +99,15 @@ run_nas "
   done
 " 2>>"$LOG"
 
+# --- 3b) offsite_current: stabilní složka s POSLEDNÍ cold verzí pro C2 (task 67 = jen poslední verze) ---
+#     Re-přidáno 22.9.2026 (Martin: do C2 jen poslední verze). Hardlink = okamžité, bez místa navíc.
+log "obnovuji offsite_current = hardlink kopie dnešní verze (C2 zálohuje jen poslední)"
+run_nas "
+  cd \"$RBASE\" || exit 1
+  rm -rf offsite_current
+  cp -al \"$DEST\" offsite_current
+" 2>>"$LOG"
+
 END=$(date +%s); DUR=$((END-START))
 INFO=$(run_nas "
   cd \"$RBASE\" 2>/dev/null || exit 0
