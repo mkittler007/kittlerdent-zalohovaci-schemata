@@ -12,9 +12,9 @@ SRC="/Volumes/KD_Ext4T/macOS.macvm"   # cutover 22.9.: zpět na kanonickou cestu
 LOCAL_BASE="/Volumes/KD_Ext4T/VM_packages"          # Thunderbolt SSD (aktivni od 31.8.)
 
 # ── RETENCE (počet balíků) — cílové schéma MK 5.9.2026 ──────────────────────
-# Thunderbolt: cold 06/13/18 (drž 4), ram 07:00 + 23:00 (drž 2 = poslední denní + poslední noční).
+# Thunderbolt: cold 06/13/18 (drž 4), ram JEN NOČNÍ 23:00 (drž 1) — MK 22.9.2026 (dřív 2× denně).
 RETAIN_COLD=4      # Thunderbolt cold (06/13/18)
-RETAIN_RAM=2       # Thunderbolt ram: poslední noční (23:00) + poslední denní (07:00)
+RETAIN_RAM=1       # Thunderbolt ram: jen poslední noční (23:00)
 
 # ── Pojistka volného místa na interním disku (platí jen když LOCAL_BASE = interní) ─
 MIN_FREE_GB=40     # když volno < tohle, ořízne nejstarší cold balík dřív, než udělá nový
