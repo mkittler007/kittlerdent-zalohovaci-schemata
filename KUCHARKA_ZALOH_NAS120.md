@@ -107,7 +107,8 @@ Dvě nové HyperBackup sady na `.120` → Synology **C2** (cold verze VM, **1×/
 
 **⚠️ Zelený „jen aktuální":** složka `daily/` drží víc datovaných kopií → aby se zálohovala jen poslední, potřeba **stabilní `VM Imac_zelený/offsite_current`** (jako M4 má `_cold_current`) udržovaný host pipeline (iMac .170). Zatím NEEXISTUJE — doplnit.
 
-**⚠️ Možný duplikát:** stará sada **„VM macOS M4_VM_cold_offsite" (repo 64, týdně Ne 17:00)** zálohuje tutéž M4 cold složku do C2. Pokud ji nahrazuje nová `VM M4_Pro_Synology`, starou vypnout/smazat (ať se neplatí C2 dvakrát) — čeká na potvrzení Martina.
+**✅ Staré sady SMAZÁNY (22.9.2026, Martin v HB UI):** `VM macOS M4_VM_cold_offsite` (repo 64) i starý Zelený C2 (repo 65) odstraněny — ověřeno: nejsou v task listu ani v `synoschedtask`, **žádné osiřelé záznamy, nic nehází chybu**. Nové 66/67 je nahrazují.
+**⚠️ DŮSLEDEK — dočasná díra v M4 offsite:** #64 (jediná M4 offsite s daty v C2) smazána, nová #66 **ještě NIKDY neproběhla** → M4 momentálně **nemá platnou C2 kopii** (lokálně chráněná dál: Thunderbolt cold 06/13/18 + WD + NAS). **Zavřít co nejdřív:** v UI opravit zdroj #66 na cold + spustit první běh.
 
 **Sudo `.120`:** `admin` / heslo ve správci (memory `project_vm_offsite_c2_synology`). Zálohy configu: `synobackup.conf.bak.claude_20260922_170755`.
 
