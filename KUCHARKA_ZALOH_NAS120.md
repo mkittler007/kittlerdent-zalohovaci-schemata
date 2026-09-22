@@ -93,6 +93,26 @@ So: Backup_settings 01:50, Claude_project 21:20, Soft21 21:40, CBCT 22:30, NP_Gr
 
 ---
 
+## 4c) NOVÉ sady VM cold → C2 (22.9.2026, Martin)
+
+Dvě nové HyperBackup sady na `.120` → Synology **C2** (cold verze VM, **1×/týden**). Nahradily/doplnily starou sadu **„VM Maco M4 sada ze synology" — SMAZÁNA** (dělala problémy).
+
+| Sada | repo | Zdroj (cílový) | Cíl | Rozvrh (cílový) | Stav 22.9. |
+|---|---|---|---|---|---|
+| **VM M4_Pro_Synology** | 66 | **`/VM macOS M4/VM_cold_offsite`** (jen cold `macOS_cold_current.macvm`) | C2 | **týdně Ne 03:00** | ⚠️ teď špatně: zdroj=celý share, rozvrh=DENNĚ 23:10 (sched ID 18) |
+| **VM Zelený_Imac_Synology** | 67 | **jen AKTUÁLNÍ VM** (potřeba `offsite_current`, viz níž) | C2 | **týdně St 03:30** | ⚠️ teď špatně: zdroj=`/VM Imac_zelený/daily` (7+ verzí), rozvrh=DENNĚ 21:20 (sched ID 23) |
+
+**Nutno nastavit v DSM UI** (nejde přes CLI — `synoschedtask` neumí `--set`, rozvrh HB drží mimo editovatelné soubory):
+> HyperBackup → sada → **Nastavení → Zdroj**: M4 odškrtnout share, vybrat jen `VM_cold_offsite`. → **Nastavení → Rozvrh zálohování**: přepnout na **týdně**, M4 = Ne 03:00, Zelený = St 03:30 (klidové C2 okno 03–05, jiný den ať se nepotkají). Volitelně zapnout **limit rychlosti přenosu** (pojistka proti bufferbloatu, viz internet flapping 22.9.).
+
+**⚠️ Zelený „jen aktuální":** složka `daily/` drží víc datovaných kopií → aby se zálohovala jen poslední, potřeba **stabilní `VM Imac_zelený/offsite_current`** (jako M4 má `_cold_current`) udržovaný host pipeline (iMac .170). Zatím NEEXISTUJE — doplnit.
+
+**⚠️ Možný duplikát:** stará sada **„VM macOS M4_VM_cold_offsite" (repo 64, týdně Ne 17:00)** zálohuje tutéž M4 cold složku do C2. Pokud ji nahrazuje nová `VM M4_Pro_Synology`, starou vypnout/smazat (ať se neplatí C2 dvakrát) — čeká na potvrzení Martina.
+
+**Sudo `.120`:** `admin` / heslo ve správci (memory `project_vm_offsite_c2_synology`). Zálohy configu: `synobackup.conf.bak.claude_20260922_170755`.
+
+---
+
 ## 5) Poznámky / stav
 
 - ✅ **Starý task „HDD_Backup → C2" (dsmbackup 61) je už VYPNUTÝ** (`disabled`) — takže mazání starého VM cíle `HDD IMac ordinace/Parallels_VM_zaloha` nic C2 zálohy nerozbije. (Jeho `detect_monitor` Ne 23:50 zůstal zapnutý, ale je neškodný.)

@@ -85,6 +85,8 @@
 **Rizika:** RAID5 bez sekundárního zrcadla (ztráta 2 disků = ztráta on-site; pojistka jen C2). **Btrfs snapshoty VYPNUTÉ** (žádná lokální ransomware vrstva — verze drží jen C2, rozhodnutí MK 2.9.).
 **Podložka:** `synology_dump/`, `synology_DR_konfigurace.md`, `KUCHARKA_ZALOH_NAS120.md`.
 
+> **⚠️ ZMĚNA PROBÍHÁ (22.9.2026) — nové VM cold → C2 sady.** Martin založil dvě nové HyperBackup sady místo/vedle starých #64/#65: **`VM M4_Pro_Synology` (repo 66)** a **`VM Zelený_Imac_Synology` (repo 67)**, cíl = 1×/týden cold VM do C2. Stará „VM Maco M4 sada ze synology" **SMAZÁNA** (dělala problémy). Cílový stav: M4 zdroj jen `VM_cold_offsite`, rozvrh **týdně Ne 03:00**; Zelený jen aktuální VM (potřeba `offsite_current`), rozvrh **týdně St 03:30**. **Teď jsou obě omylem DENNÍ** (M4 23:10, Zelený 21:20) a M4 zálohuje celý share → **nutno doladit v DSM UI** (`synoschedtask` neumí `--set`). **Řešit duplikát:** pokud 66/67 nahrazují #64/#65, staré vypnout. Detail + postup → `KUCHARKA_ZALOH_NAS120.md` §4c. (Pravidlo: změna zálohy = vždy update tohoto plánu, memory `feedback_zalohy_aktualizuj_schema`.)
+
 ## 6) Synology DS218j (`192.168.100.104`) — SynoVeeam
 **Role:** sekundární NAS, fakticky **legacy/nevyužitý** pro klinická data. Bez aktivní zálohovací role. *(Kandidát: buď zapojit jako druhý off-site cíl, nebo vyřadit — k rozhodnutí.)*
 
