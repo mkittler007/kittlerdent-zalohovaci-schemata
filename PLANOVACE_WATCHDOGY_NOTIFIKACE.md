@@ -127,6 +127,7 @@ se aktualizuje:
 | `cz.kittlerdent.podcast_sync` | plánovač | denně 5:00 | `~/podcast/sync_run.sh` | ne | stahování podcastů z kanálů | ne |
 | `cz.kittlerdent.podcast_server` | služba KeepAlive | RunAtLoad+KeepAlive | `~/podcast/server.py` | ne | podcast feed server | ne |
 | `cz.kittlerdent.podcast_tunnel` | služba (CF tunnel) | RunAtLoad+KeepAlive | `~/podcast/tunnel.sh` | ne | tunel podcast.kittler.app | ne |
+| `cz.kittlerdent.podcast_health` | **hlídač (outcome-based)** | denně 11:00 | `~/podcast/podcast_health.sh` | **ano (notify.py, jen při neúspěšné opravě)** | zdraví YT→podcast feedu: sync doběhl <30h / ne všechny kanály dole (`sync_health.json`) / feed HTTP 200 → auto-fix sync_run.sh / `brew upgrade yt-dlp` / restart server+tunnel | ne |
 | `cz.kittlerdent.fitness_tunnel` | služba (CF tunnel) | RunAtLoad+KeepAlive | `cloudflared` | ne | tunel health.kittler.app | ne |
 | `cz.kittlerdent.ceny_tunnel` | služba (CF tunnel) | RunAtLoad+KeepAlive | `cloudflared` | ne | tunel dashboardu cen skladu | ne |
 
