@@ -13,8 +13,10 @@ _ap = argparse.ArgumentParser()
 _ap.add_argument("--vm-dir", default=os.path.join(HOME, "monitoring/cpuram"))
 _ap.add_argument("--host-dir", default=os.path.join(HOME, "monitoring/cpuram_host"))
 _ap.add_argument("--dny", type=int, default=7)
+_ap.add_argument("--only-if-action", action="store_true",
+                 help="poslat e-mail JEN když je vhodný zásah (tíseň/změna RAM); jinak exit 20 (tichý monitoring)")
 _ap.add_argument("--gate-workday", action="store_true",
-                 help="odeslat jen když Martin dnes ordinuje (IS kalendář lekar_id=24); jinak exit 10")
+                 help="(zrušeno) dřív: poslat jen v pracovní den. Actionable alert jde i mimo okno.")
 _A = _ap.parse_args()
 HOST_DIR = _A.host_dir
 VM_DIR = _A.vm_dir
@@ -115,6 +117,35 @@ def parse_peaks(pattern, days):
 def gb(mb):
     return mb/1024.0
 
+# Práh smysluplného uvolnění RAM: jen když lze hostu vrátit ASPOŇ tolik, stojí
+# za to VM restartovat. Drobné předimenzování (např. 2–4 GB) na zdravém hostu
+# se neřeší a NEnotifikuje (Martin 12.10.2026).
+RECLAIM_MIN_GB = 8
+
+def vm_target(vm):
+    """Cílová RAM pro VM dle naměřeného working setu, nebo None když nelze spočítat."""
+    rec, alloc = vm.get("rec_gb"), vm.get("alloc_gb")
+    if not (rec and alloc):
+        return None
+    target = max(rec, 28)  # neřezat pod 28 GB, dokud se neobjeví swap
+    target = min(target, ((alloc - 8) // 4) * 4) if alloc - 8 >= target else target
+    return target
+
+def action_needed(host, vm):
+    """Vrátí seznam důvodů, proč je zásah vhodný. Prázdný seznam = vše OK, nic neposílat."""
+    reasons = []
+    if host.get("data") and host.get("free_min") is not None and host["free_min"] < 25:
+        reasons.append(f"HOST paměťová tíseň (volná RAM min {host['free_min']:.0f}%)")
+    if vm.get("data"):
+        swap_risk = vm.get("free_min") is not None and vm["free_min"] < 25
+        rec, alloc = vm.get("rec_gb"), vm.get("alloc_gb")
+        target = vm_target(vm)
+        if swap_risk:
+            reasons.append("VM swap/nedostatek RAM — zvážit NAVÝŠENÍ")
+        elif rec and alloc and target and rec <= alloc - 4 and (alloc - target) >= RECLAIM_MIN_GB:
+            reasons.append(f"VM předimenzováno — lze uvolnit hostu ~{alloc - target:.0f} GB (na {target:.0f} GB)")
+    return reasons
+
 def machine_block(name, csv_rows, used_key, peak_pattern, total_from):
     """Vrátí (text_bloku, stats_dict). stats slouží pro souhrnný Závěr."""
     L = [f"── {name} ──"]
@@ -176,10 +207,8 @@ def zaver(host, vm):
     if vm.get("data"):
         rec, alloc, p99 = vm.get("rec_gb"), vm.get("alloc_gb"), vm.get("p99_gb")
         swap_risk = (vm.get("free_min") is not None and vm["free_min"] < 25)
-        if rec and alloc and rec <= alloc - 4 and not swap_risk:
-            # konzervativní cíl: doporučení zaokrouhlené nahoru na násobek 4, ale min o 8 GB pod přiděleným
-            target = max(rec, 28)  # neřezat pod 28 GB, dokud se neobjeví swap (viz paměť)
-            target = min(target, ((alloc - 8) // 4) * 4) if alloc - 8 >= target else target
+        target = vm_target(vm)
+        if rec and alloc and target and rec <= alloc - 4 and (alloc - target) >= RECLAIM_MIN_GB and not swap_risk:
             L.append(f"• VM: working set p99={p99:.1f} GB, přiděleno {alloc:.0f} GB — předimenzováno o ~{alloc-target:.0f} GB. "
                      f"RAM lze snížit na {target:.0f} GB (uvolní hostu ~{alloc-target:.0f} GB). "
                      f"Akce: vypnout VM → prlctl set macOS --memsize {int(target*1024)}. Neřezat pod 28 GB, dokud se neobjeví swap.")
@@ -190,11 +219,6 @@ def zaver(host, vm):
     return "\n".join(L)
 
 def main():
-    # Gate: odeslat jen v pracovní den (Martin dnes ordinuje). Jinak exit 10 →
-    # report_run.sh nezapíše weekstamp a zkusí to další den (viz feedback_email_jen_v_praci).
-    if _A.gate_workday and not ordinuje_dnes():
-        print("přeskočeno — Martin dnes neordinuje (volno/dovolená), report odložen na další pracovní den.")
-        sys.exit(10)
     host = load_csv(os.path.join(HOST_DIR, "host_*.csv"), DAYS)
     vm = load_csv(os.path.join(VM_DIR, "vm_*.csv"), DAYS)
     now = datetime.now().astimezone().strftime("%Y-%m-%d %H:%M")
@@ -209,12 +233,22 @@ def main():
             "Data: /volume1/Mac_mini_Pro_Logy na Synology (.120). Repo: kittlerdent-zalohovaci-schemata/vytizenost_CPU_RAM."]
     text = "\n".join(body)
     print(text)
+
+    # Politika (Martin 12.10.2026): monitorovat TIŠE. Když není potřeba zásah,
+    # NEPOSÍLAT nic. Když je zásah vhodný (navýšení/snížení RAM, tíseň hosta),
+    # poslat e-mail — a to i MIMO pracovní okno (na rozdíl od běžného mailu).
+    acts = action_needed(host_st, vm_st)
+    if _A.only_if_action and not acts:
+        print("[no-action] žádný zásah není potřeba — report se neodesílá (tichý monitoring).")
+        sys.exit(20)
+    subject = ("⚠ Vytíženost RAM/CPU — doporučen zásah: " + "; ".join(acts)) if acts \
+              else "Vytíženost RAM/CPU — report (host + VM)"
     if os.path.exists(NOTIFY):
         # Jen e-mail (--email-to) — Martin výslovně chce report pouze mailem, ne na Telegram.
         # notify.py drží outbox retry i pro e-mail (pojistka zachována), jen bez cross-kanálu.
         subprocess.run([sys.executable, NOTIFY, "--email-to", EMAIL_TO,
-                        "--subject", "Vytíženost RAM/CPU — týdenní report (host + VM)",
-                        "--body", text, "--key", "moncpuram_weekly"], check=False)
+                        "--subject", subject,
+                        "--body", text, "--key", "moncpuram_action"], check=False)
     else:
         print("POZOR: notify.py nenalezen, report neodeslán.", file=sys.stderr)
 
