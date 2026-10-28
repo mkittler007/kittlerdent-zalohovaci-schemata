@@ -135,11 +135,21 @@ else
     log "IMS: už mám nejnovější $newest_src"
   fi
 
-  # drž jen jednu verzi — smaž ostatní denní snímky
+  # drž jen jednu verzi — smaž ostatní denní 05:00 snímky (primární rsync kanál)
   if [ -f "$DST/$newest_src" ]; then
     ls "$DST" 2>/dev/null | grep _05-00-01 | grep -v -x "$newest_src" | while IFS= read -r old; do
       rm -f "$DST/$old" && log "IMS: smazána stará verze $old"
     done
+    # pročisti i snímky z druhého (iCloud) kanálu (_05-50-01/_06-00-01 z recepce):
+    # drž jen nejnovější DEN; starší dny smaž. Dnešní dva soubory (rsync _05-00-01 +
+    # iCloud _05-50-01) zůstanou oba = žádný churn (rsync by si _05-00-01 jinak zase stáhl).
+    newest_day=$(ls "$DST" 2>/dev/null | grep '^ims_backup_' | sed -E 's/ims_backup_([0-9-]+)_.*/\1/' | sort | tail -1)
+    if [ -n "$newest_day" ]; then
+      ls "$DST" 2>/dev/null | grep '^ims_backup_' | while IFS= read -r f; do
+        fday=$(echo "$f" | sed -E 's/ims_backup_([0-9-]+)_.*/\1/')
+        [[ "$fday" < "$newest_day" ]] && rm -f "$DST/$f" && log "IMS: pročištěna starší kopie $f"
+      done
+    fi
   fi
 
   # info o čerstvosti (bez postihu — když zdroj dnešní 05:00=07:00 SELČ ještě nevyrobil)
@@ -187,4 +197,3 @@ else
   log "vše OK"
 fi
 log "=== běh konec ==="
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          
