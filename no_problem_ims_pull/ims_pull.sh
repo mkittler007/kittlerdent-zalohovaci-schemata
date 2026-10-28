@@ -122,7 +122,7 @@ else
     done
     if [ "$pulled" != "1" ]; then
         # přenos 3× selhal — panikař JEN když je i LOKÁLNÍ kopie zastaralá
-        loc=$(ls "$DST" 2>/dev/null | grep _05-00-01 | sort | tail -1)
+        loc=$(ls "$DST" 2>/dev/null | grep "^ims_backup_" | sort | tail -1)  # alarm-check: libovolny snimek (i iCloud _05-50-01), ne jen _05-00-01
         if [ -n "$loc" ]; then la_h=$(( ( $(date +%s) - $(stat -f %m "$DST/$loc") ) / 3600 )); else la_h=9999; fi
         if [ "$la_h" -le "$IMS_MAX_AGE_H" ]; then
           log "IMS: rsync opakovaně selhal (6× / ~4 min, síť k .120), ale lokální kopie čerstvá (${la_h} h ≤ ${IMS_MAX_AGE_H}) — bez alarmu"
