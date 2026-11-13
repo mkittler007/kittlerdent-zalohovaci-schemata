@@ -9,7 +9,7 @@ LOG="$LOG_DIR/prenos_na_synology.log"; ts(){ date +%FT%T%z; }; log(){ echo "$(ts
 
 # --- loopback SSH tunel (Apple /usr/bin/ssh = LNP-povolený) → Homebrew rsync na 127.0.0.1 ---
 # macOS 26 Local Network Privacy blokuje Homebrew rsync na LAN pod launchd (EHOSTUNREACH). Loopback je z LNP vyňatý.
-# Zachovává GNU rsync -S sparse + --inplace pro velké .hds (openrsync to neumí). Bez zásahu do NASu (stávající sshd).
+# Zachovává GNU rsync -S sparse pro velké .hds (openrsync to neumí). Bez zásahu do NASu (stávající sshd).
 LPORT=2873
 /usr/bin/ssh $SSH_OPTS -o ExitOnForwardFailure=yes -N -L 127.0.0.1:$LPORT:127.0.0.1:22 "$SYNO_USER@$SYNO_HOST" 2>>"$LOG" & TUN_PID=$!
 trap '[ -n "${TUN_PID:-}" ] && kill "$TUN_PID" 2>/dev/null' EXIT
@@ -26,14 +26,21 @@ SPARSE=""; echo "$REMOTE_RSYNC" | grep -q /opt/bin/rsync && SPARSE="-S"
 $TSSH "$SYNO_USER@127.0.0.1" "mkdir -p \"$NAS_BASE\"" 2>>"$LOG"
 
 # send_type <typ> <retence>: přenese NEJNOVĚJŠÍ balík daného typu + rotace na NAS.
+# 13.11.2026 (MK): --link-dest na předchozí balík téhož typu na NAS → hardlink neměněných 128G bandů,
+# přenese se jen noční DELTA (jednotky–desítky G místo ~100 G) → gentle i při přetíženém NASu
+# (WhitestorePRO/HyperBackup v okně 03–05h starvoval receiver → io timeout code 30). Stejný vzor jako WD vrstva.
+# --inplace ODSTRANĚN (neslučitelný s --link-dest); --timeout 1800→3600 (tolerance špiček NASu).
 send_type() {
   TYPE="$1"; KEEP="$2"
   PKG=$(ls -1dt "$LOCAL_BASE/macOS_${TYPE}_"*.macvm 2>/dev/null | head -1)
   [ -n "$PKG" ] || { log "Žádný macOS_${TYPE}_* v $LOCAL_BASE — přeskočeno."; return 0; }
   NAME=$(basename "$PKG")
-  log "přenos $NAME → $SYNO_HOST:$NAS_BASE/ (tunel :$LPORT, rsync $REMOTE_RSYNC $SPARSE)…"
-  if "$RSYNC" -rlt $SPARSE --partial --inplace --timeout=1800 --rsync-path="$REMOTE_RSYNC" \
-       -e "$TSSH" "$PKG/" "$SYNO_USER@127.0.0.1:$NAS_BASE/$NAME/" 2>>"$LOG"; then
+  # předchozí balík téhož typu na NAS (≠ NAME) = basis pro --link-dest (hardlink neměněných bandů)
+  PREV=$($TSSH "$SYNO_USER@127.0.0.1" "ls -1dt \"$NAS_BASE\"/macOS_${TYPE}_*.macvm 2>/dev/null | grep -vF \"$NAME\" | head -1" 2>>"$LOG")
+  RSARGS=(-rlt $SPARSE --partial --timeout=3600 --rsync-path="$REMOTE_RSYNC")
+  [ -n "$PREV" ] && RSARGS+=(--link-dest="$PREV")
+  log "přenos $NAME → $SYNO_HOST:$NAS_BASE/ (tunel :$LPORT, rsync $REMOTE_RSYNC $SPARSE; link-dest=${PREV:-žádný})…"
+  if "$RSYNC" "${RSARGS[@]}" -e "$TSSH" "$PKG/" "$SYNO_USER@127.0.0.1:$NAS_BASE/$NAME/" 2>>"$LOG"; then
     log "OK přeneseno: $NAME"
   else
     log "CHYBA přenosu $NAME (rc=$?) — ponecháno k dalšímu pokusu."; notify "VM záloha Synology: přenos $NAME selhal"; return 1
@@ -49,9 +56,5 @@ send_type() {
 rc=0
 send_type cold "$RETAIN_SYNO_COLD" || rc=1            # cold KAŽDOU NOC
 # VARIANTA 2 (22.9.2026): ram se na Synology už NEpřenáší (ram jen na Thunderboltu).
-# if [ "$(date +%u)" -eq 4 ]; then                      # 4 = čtvrtek → i ram
-#   send_type ram "$RETAIN_SYNO_RAM" || rc=1
-#   log "Čtvrtek → přenesen i ram."
-# fi
 [ "$rc" -eq 0 ] && log "OK hotovo (Synology cold=$RETAIN_SYNO_COLD; ram vypnut – jen Thunderbolt)."
 exit $rc
