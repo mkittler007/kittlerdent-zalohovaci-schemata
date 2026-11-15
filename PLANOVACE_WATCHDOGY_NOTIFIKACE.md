@@ -130,6 +130,9 @@ se aktualizuje:
 | `cz.kittlerdent.podcast_health` | **hlídač (outcome-based)** | denně 11:00 | `~/podcast/podcast_health.sh` | **ano (notify.py, jen při neúspěšné opravě)** | zdraví YT→podcast feedu: sync doběhl <30h / ne všechny kanály dole (`sync_health.json`) / feed HTTP 200 → auto-fix sync_run.sh / `brew upgrade yt-dlp` / restart server+tunnel | ne |
 | `cz.kittlerdent.fitness_tunnel` | služba (CF tunnel) | RunAtLoad+KeepAlive | `cloudflared` | ne | tunel health.kittler.app | ne |
 | `cz.kittlerdent.ceny_tunnel` | služba (CF tunnel) | RunAtLoad+KeepAlive | `cloudflared` | ne | tunel dashboardu cen skladu | ne |
+| `com.kittler.vypisy_save` | plánovač (výpisy) | denně 5:00 | `~/mail_filter/vypisy_save.py` | notify.py (JEN při chybě) | schránka `vypisy@kittler.cz` → uloží PDF/GPC výpis do `Výpisy/sro/{rok}_Internetbanking`, označí přečteno; izolováno od mail_filter | ano (error-only) |
+
+**Pozn. k výpisech (15.11.2026):** watchdog **`com.kittlerdent.vypis_check`** (večerní kontrola ČSOB výpisu na `martin@`, denně 19:00) byl **VYPNUT** — výpisy přesměrovány do nové schránky `vypisy@kittler.cz`, zpracovává je `com.kittler.vypisy_save`. Plist přejmenován na `com.kittlerdent.vypis_check.plist.disabled` (reverzibilní).
 
 **Pozn. k VM zálohám na hostu:** aktivní větev je **`com.kittler.vmpkg.*`** (cold/ram/wd/nas/hlidac). Starší plisty
 `com.kittler.vm-backup`, `vm-backup-wd`, `vm-backup-watchdog`, `vm-snapshot` **existují na disku, ale NEJSOU nahrané**
