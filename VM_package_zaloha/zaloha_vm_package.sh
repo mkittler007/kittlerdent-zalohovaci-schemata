@@ -56,7 +56,18 @@ fi
 t1=$(date +%s)
 
 # ── 3) resume co nejdřív ──────────────────────────────────────────────────────
-"$PRL" resume "$UUID" >>"$LOG" 2>&1 || { log "POZOR: resume vrátil chybu"; notify "VM záloha: resume vrátil chybu — ověř VM!"; }
+# resume VM; když prlctl vrátí chybu, ověř SKUTEČNÝ stav — "not stopped" = VM už běží = planý poplach.
+# Notifikuj JEN když VM reálně neběží (po druhém pokusu o resume). Viz feedback_verify_before_notify.
+vm_running() { "$PRL" status "$UUID" 2>/dev/null | grep -qw running; }
+if ! "$PRL" resume "$UUID" >>"$LOG" 2>&1; then
+  if vm_running; then
+    log "resume vrátil chybu, ale VM běží → planý poplach (pause se mezi klonem rozpadl), bez notifikace"
+  else
+    "$PRL" resume "$UUID" >>"$LOG" 2>&1   # druhý pokus
+    if vm_running; then log "resume napodruhé OK — VM běží"
+    else log "POZOR: VM NEBĚŽÍ ani po druhém resume"; notify "VM záloha: VM NEBĚŽÍ po resume — ověř VM!"; fi
+  fi
+fi
 echo run > "$PHASE" 2>/dev/null
 log "klon rc=$rc downtime=$((t1-t0))s same_vol=$SAME"
 
