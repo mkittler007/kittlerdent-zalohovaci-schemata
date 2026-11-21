@@ -78,6 +78,7 @@ se aktualizuje:
 - **`com.kittler.vm_heartbeat`** (VM, `~/bin/kd_heartbeat.py`, á 5 min + RunAtLoad, bez tokenů):
   - Kontroluje kritické KeepAlive (telegram listener, implantáty Django, web_vp, fitness web, ceny web, MySQL, Nginx, PostgreSQL) + porty 3306/8080/8000/5000/5432/5050/8010; spadlé kickstartne.
   - Výsledek `{ts,host,ok,problems,healed}` **push přes SSH** do hostového `~/.kd_supervisor/vm_heartbeat.json` (VM→host směr funguje, opačný je zavřený).
+  - **Claude canary (21.11.2026, po updatu CC, který přesunul binárku na `~/.local/bin/claude`):** každý tep ověří existenci binárky přes sdílený resolver `~/bin/claude_bin.py`; 1×/h `claude auth status` (bez tokenů). Chybějící binárka → hned do `problems`; nepřihlášen → do `problems` až po 2 po sobě jdoucích missích (zamčený keychain po rebootu). Stav `~/.kd_supervisor/claude_canary.json`. Headless úlohy VM hledají claude jednotně přes `~/bin/find_claude.sh` / `claude_bin.py` (při nenalezení 1 kritická notifikace přes notify.py / 6 h).
 
 ### 4) Externí dead-man's switch
 - **`com.kittler.deadman_ping`** (`~/bin/kd_alive_ping.sh`, **na OBOU strojích**, á 5 min + RunAtLoad).
